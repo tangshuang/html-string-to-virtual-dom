@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+
+<div id="app"></div>
+
+<script src="./VirtualDOM.browser.js"></script>
+<script>
+let vdom = new VirtualDOM({
+  template: `
+    <div id="{{id}}">
+      <p>{{text}}</p>
+      <p><a href="javascript:" onclick="{{:click}}">click me to refresh content</a></p>
+      <p><input onkeyup="{{:input}}" value=""></p>
+      <ul>
+        <@foreach target="cats" key="name" value="color">
+          <li>{{name}}'s color is {{color}}</li>
+        </@foreach>
+      </ul>
+      <@if condition="{{isShow}}">
+        <p>this will be show.</p>
+      </@if>
+      <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
+    </div>
+  `,
+  data: {
+    id: 'my-test',
+    text: 'this is my first VirtualDOM demo.',
+    cats: {
+      caf: 'red',
+      sam: 'yellow',
+    },
+    isShow: true,
+  },
+  events: {
+    input(e) {
+      e.target.value = 'xxx'
+    },
+    click(e) {
+      e.preventDefault()
+      vdom.update({
+        text: 'this is new content ' + Date.now(),
+      })
+    },
+    toggle(e) {
+      e.preventDefault()
+      vdom.update({
+        isShow: !vdom.data.isShow,
+      })
+    },
+  },
+  selector: '#app',
+})
+vdom.render()
+</script>
