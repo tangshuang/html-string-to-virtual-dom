@@ -13,6 +13,7 @@ module.exports = {
     VirtualDOM: './VirtualDOM.js',
   },
   output: {
+    path: __dirname + '/dist',
     filename: '[name].browser.js',
     libraryTarget: 'window',
     library: '[name]',

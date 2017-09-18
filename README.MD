@@ -11,13 +11,13 @@ npm install --save hst-virtual-dom
 ## Usage
 
 ```
-// ES6 module, npm package
+// ES6 module, npm package, using webpack
 import VirtualDOM from 'hst-virtual-dom'
 ```
 
 ```
 // browser, window['VirtualDOM']
-<script src="VirtualDOM.browser.js"></script>
+<script src="dist/VirtualDOM.browser.js"></script>
 ```
 
 ```
@@ -85,7 +85,7 @@ Use `{{value}}` in template string, `value` is the property name of `data`, the 
 
 Use `{{:eventHandler}}` in template string, `eventHandler` is the property name of `events`, the value should be a function.
 
-#### \@foreach tag
+#### @foreach
 
 I create a new tag whose name is `@foreach`, like:
 
@@ -105,7 +105,7 @@ The interpolation name inner. As you know, `Array.forEach((v, i) => {})`, `i` an
 
 The same usage with `key`, stands for value.
 
-#### \@if
+#### @if
 
 `@if` tag is a special tag which control the content to be show in dom.
 
@@ -121,4 +121,40 @@ The condition to be use. There can be interpolations in condition. ie. `conditio
 
 ### data
 
-`data` option is used to be rendered for interpolation.
+`data` option is used to be rendered for interpolation. Only string and number data type can be used for a single interpolation. If a data item is object/array, it can only be used in `@foreach`.
+
+### events
+
+Events callback functions. Used in `{{:}}` special interpolation.
+
+### selector
+
+DOM element selector, the element which to mount to when call `render`.
+
+## Properties and Methods
+
+After a instance created, you can get these properties and methods from it:
+
+### vnodes
+
+The VNodes of this instance.
+
+### elements
+
+Flat structure VNodes list. All VNodes are in this array. You can use `filter` method to pick out what you want.
+
+### render()
+
+When a vdom instance created, it will not render to the true DOM until you call render method.
+
+### update(data)
+
+Use new data to update view. The `data` will be merged into old data.
+
+### destroy()
+
+Destroy the mounted VNodes. And then you can reuse `render` method to render again before you destroy this instance.
+
+## Development
+
+If you want to modify the source code and build for browser using, you can run `npm run build` after you modify.
