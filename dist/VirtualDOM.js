@@ -1,5 +1,14 @@
-window["VirtualDOM"] =
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["VirtualDOM"] = factory();
+	else
+		root["VirtualDOM"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -9089,4 +9098,4 @@ function patch(patches, topLevelElement) {
 
 /***/ })
 /******/ ]);
-window["VirtualDOM"] = window["VirtualDOM"]["default"];
+});

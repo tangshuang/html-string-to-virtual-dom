@@ -8,19 +8,20 @@ A Virtual DOM library which is based on HTML string template.
 npm install --save hst-virtual-dom
 ```
 
+Or use in browser directly:
+
+```
+<script src="dist/VirtualDOM.js"></script>
+<script>
+window['VirtualDOM'] = window['VirtualDOM']['default']
+</script>
+```
+
 ## Usage
 
+
 ```
-// ES6 module, npm package, using webpack
 import VirtualDOM from 'hst-virtual-dom'
-```
-
-```
-// browser, window['VirtualDOM']
-<script src="dist/VirtualDOM.browser.js"></script>
-```
-
-```
 let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
@@ -158,3 +159,13 @@ Destroy the mounted VNodes. And then you can reuse `render` method to render aga
 ## Development
 
 If you want to modify the source code and build for browser using, you can run `npm run build` after you modify.
+
+## MIT License
+
+Copyright 2017 tangshuang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
