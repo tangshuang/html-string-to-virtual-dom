@@ -2,14 +2,20 @@
 
 <div id="app"></div>
 
-<script src="./dist/VirtualDOM.browser.js"></script>
+<script src="./dist/VirtualDOM.js"></script>
 <script>
+window.VirtualDOM = window.VirtualDOM['default']
 let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
       <p>{{text}}</p>
       <p><a href="javascript:" onclick="{{:click}}">click me to refresh content</a></p>
       <p><input onkeyup="{{:input}}" value=""></p>
+      <p><input type="checkbox"><label>check me</label></p>
+      <p><select>
+        <option>click to change</option>
+        <option>touch to change</option>  
+      </select></p>
       <ul>
         <@foreach target="cats" key="name" value="color">
           <li>{{name}}'s color is {{color}}</li>

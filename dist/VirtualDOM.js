@@ -6424,15 +6424,36 @@ function createElement(node) {
   var name = node.name;
   var el = document.createElement(name);
   var attrs = node.attrs;
+  // let props = node.props
   var events = node.events;
 
-  var attrKeys = attrs ? Object.keys(attrs) : [];
+  var attrKeys = Object.keys(attrs);
   if (attrKeys && attrKeys.length) {
     attrKeys.forEach(function (key) {
       var value = attrs[key];
       el.setAttribute(key, value);
     });
   }
+
+  // let propKeys = Object.keys(props)
+  // if (propKeys && propKeys.length) {
+  //   propKeys.forEach(prop => {
+  //     let value = props[prop]
+  //     el[prop] = value
+  //   })
+  // }
+
+  // if (name === 'input') {
+  //   if (attrs.type === 'checkbox' || attrs.type === 'radio') {
+  //     el.addEventListener('change', e => props.checked = e.target.checked, false)
+  //   }
+  //   else {
+  //     el.addEventListener('change', e => props.value = e.target.value, false)
+  //   }
+  // }
+  // else if (name === 'select' || name === 'textarea') {
+  //   el.addEventListener('change', e => props.value = e.target.value, false)
+  // }
 
   var eventKeys = events ? Object.keys(events) : [];
   if (eventKeys && eventKeys.length) {
@@ -6555,6 +6576,8 @@ var VirtualDOM = function () {
           name: name,
           id: attrs.id,
           class: attrs.class ? attrs.class.split(' ') : [],
+          attrs: attrs,
+          props: {},
           parent: null,
           children: [],
           text: null,
