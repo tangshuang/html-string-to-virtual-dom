@@ -2,7 +2,7 @@ export default function createElement(node) {
   let name = node.name
   let el = document.createElement(name)
   let attrs = node.attrs
-  // let props = node.props
+  // let props = node.props = node.props || {}
   let events = node.events
 
   let attrKeys = Object.keys(attrs)

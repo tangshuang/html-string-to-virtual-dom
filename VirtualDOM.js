@@ -56,7 +56,6 @@ export default class VirtualDOM {
         id: attrs.id,
         class: attrs.class ? attrs.class.split(' ') : [],
         attrs,
-        props: {},
         parent: null,
         children: [],
         text: null,
