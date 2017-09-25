@@ -2,15 +2,36 @@ export default function createElement(node) {
   let name = node.name
   let el = document.createElement(name)
   let attrs = node.attrs
+  // let props = node.props = node.props || {}
   let events = node.events
 
-  let attrKeys = attrs ? Object.keys(attrs) : []
+  let attrKeys = Object.keys(attrs)
   if (attrKeys && attrKeys.length) {
     attrKeys.forEach(key => {
       let value = attrs[key]
       el.setAttribute(key, value)
     })
   }
+
+  // let propKeys = Object.keys(props)
+  // if (propKeys && propKeys.length) {
+  //   propKeys.forEach(prop => {
+  //     let value = props[prop]
+  //     el[prop] = value
+  //   })
+  // }
+
+  // if (name === 'input') {
+  //   if (attrs.type === 'checkbox' || attrs.type === 'radio') {
+  //     el.addEventListener('change', e => props.checked = e.target.checked, false)
+  //   }
+  //   else {
+  //     el.addEventListener('change', e => props.value = e.target.value, false)
+  //   }
+  // }
+  // else if (name === 'select' || name === 'textarea') {
+  //   el.addEventListener('change', e => props.value = e.target.value, false)
+  // }
 
   let eventKeys = events ? Object.keys(events) : []
   if (eventKeys && eventKeys.length) {
