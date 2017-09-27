@@ -86,6 +86,74 @@ Use `{{value}}` in template string, `value` is the property name of `data`, the 
 
 Use `{{:eventHandler}}` in template string, `eventHandler` is the property name of `events`, the value should be a function.
 
+### data
+
+`data` option is used to be rendered for interpolation. Only string and number data type can be used for a single interpolation. If a data item is object/array, it can only be used in `@foreach`.
+
+### events
+
+Events callback functions. Used in `{{:}}` special interpolation.
+
+### directives
+
+Directive defination functions. Key name is directive name. Read more in *Directives*.
+
+### selector
+
+DOM element selector, the element which to mount to when call `render`.
+
+## Directives
+
+### What's a directive?
+
+A directive is a angular-directive-like html tag in html string template with `@` at the beginning. For example, `<@my-directive></@my-directive>`.
+
+### How to define a directive?
+
+You can define a directive in `options.directives`. For example:
+
+```
+let vdom = new VirtualDOM({
+  template: `
+    <@my-directive></@my-directive>
+  `,
+  directives: {
+    'my-directive': (attrs, events, children, context) => {
+      // defination code...
+      // must return a vnodes array
+    },
+  },
+})
+```
+
+**defination function**
+
+What's a defination function? It is a function, which define the directive's behavior. It has four paramaters:
+
+*attrs*
+
+Directive's attributes in html string template.
+
+*events*
+
+Directive's events functions in html string template. Yes, it supports events attribute with `on` at the beginning of attr name.
+
+*children*
+
+Directive's children vnodes, sub tags in html string template.
+
+*context*
+
+`this` of current VirtualDOM instance.
+
+*@return*
+
+The function must return an array which is made up with vnodes. `children` are vnodes. If you want to add new vnodes, you can use another VirtualDOM instance to implement. Look into `demo.html`.
+
+### Default Directives
+
+Now we have two default directives, `foreach` and `if`.
+
 #### @foreach
 
 I create a new tag whose name is `@foreach`, like:
@@ -120,18 +188,6 @@ The same usage with `key`, stands for value.
 
 The condition to be use. There can be interpolations in condition. ie. `condition="{{a}} > {{b}}"`.
 
-### data
-
-`data` option is used to be rendered for interpolation. Only string and number data type can be used for a single interpolation. If a data item is object/array, it can only be used in `@foreach`.
-
-### events
-
-Events callback functions. Used in `{{:}}` special interpolation.
-
-### selector
-
-DOM element selector, the element which to mount to when call `render`.
-
 ## Properties and Methods
 
 After a instance created, you can get these properties and methods from it:
@@ -143,6 +199,19 @@ The VNodes of this instance.
 ### elements
 
 Flat structure VNodes list. All VNodes are in this array. You can use `filter` method to pick out what you want.
+
+### createVirtualDOM()
+
+When a vdom instance created, you may just want to get its vnodes, not render to document, use `createVirtualDOM`:
+
+```
+var vdom = new VirtualDOM({
+  template: '<div class="my-box"></div>'
+})
+var vnodes = vdom.createVirtualDOM()
+```
+
+This is useful when you define a directive.
 
 ### render()
 

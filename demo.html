@@ -25,6 +25,9 @@ let vdom = new VirtualDOM({
         <p>this will be show.</p>
       </@if>
       <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
+      <@my-directive ontrigger={{:trigger}}>
+        <span>this is my custom directive</span>
+      </@my-directive>
     </div>
   `,
   data: {
@@ -51,6 +54,26 @@ let vdom = new VirtualDOM({
       vdom.update({
         isShow: !vdom.data.isShow,
       })
+    },
+    trigger(msg) {
+      alert(msg)
+    },
+  },
+  directives: {
+    'my-directive': (attrs, events, children) => {
+      let myVDOM = new VirtualDOM({
+        template: `
+          <div class="my-custom-directive" onclick={{:click}}></div>
+        `,
+        events: {
+          click(e) {
+            events.trigger('dont click me!')
+          },
+        },
+      })
+      let vnodes = myVDOM.createVirtualDOM()
+      vnodes[0].children = children
+      return vnodes
     },
   },
   selector: '#app',

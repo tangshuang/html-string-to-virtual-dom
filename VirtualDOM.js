@@ -2,42 +2,23 @@ import {Parser} from 'htmlparser2'
 import createElement from './createElement'
 import diff from './diff'
 import patch from './patch'
-
-function foreach(obj, callback) {
-  let keys = Object.keys(obj)
-  keys.forEach(key => {
-    let value = obj[key]
-    callback(key, value)
-  })
-}
-function merge(obj1, obj2) {
-  let obj = {}
-  foreach(obj1, (key, value) => obj[key] = value)
-  foreach(obj2, (key, value) => obj[key] = value)
-  return obj
-}
+import foreach from './utils/foreach'
+import merge from './utils/merge'
+import defaultDirectives from './directives'
+import interpose from './utils/interpose'
 
 export default class VirtualDOM {
-  constructor({template, data, events = {}, selector}) {
+  constructor({template, data = {}, events = {}, directives = {}, selector}) {
     this.template = template
     this.data = data
     this.events = events
+    this.directives = merge(defaultDirectives, directives)
     this.selector = selector
     this.vnodes = this.createVirtualDOM()
   }
   createVirtualDOM() {
     let template = this.template
     let data = this.data
-    let interpose = (str, key, value) => {
-      if (typeof str !== 'string') {
-        return str
-      }
-      if (str.indexOf('{{') > -1 && str.indexOf('}}')) {
-        let reg = new RegExp('\{\{' + key + '\}\}', 'g')
-        str = str.replace(reg, value)
-      }
-      return str
-    }
 
     let dataKeys = Object.keys(data)
     if (dataKeys.length) {
@@ -107,53 +88,19 @@ export default class VirtualDOM {
     parser.parseChunk(template)
     parser.done()
 
+    let directives = this.directives
     elements.forEach(vnode => {
-      if (vnode.name === '@foreach') {
-        let attrs = vnode.attrs
-        let items = data[attrs.target]
-        let key = attrs.key
-        let value = attrs.value
-        let children = vnode.children
-        let childNodes = []
-
-        if (items) {
-          foreach(items, (i, item) => {
-            children.forEach(child => {
-              let node = {}
-              foreach(child, (prop, value) => {
-                node[prop] = value
-              })
-              node.text = interpose(node.text, key, i)
-              node.text = interpose(node.text, value, item)
-              foreach(node.attrs, (k, v) => {
-                node.attrs[k] = interpose(v, key, i)
-                node.attrs[k] = interpose(v, value, item)
-              })
-              node.id = node.attrs.id
-              node.class = node.attrs.class ? node.attrs.class.split(' ') : []
-              childNodes.push(node)
-            })
-          })
-        }
-
-        if (childNodes.length) {
+      if (vnode.name.substring(0, 1) === '@') {
+        let directiveName = vnode.name.substring(1)
+        if (typeof directives[directiveName] === 'function') {
+          let attrs = vnode.attrs
+          let children = vnode.children
+          let events = vnode.events
+          let childNodes = directives[directiveName](attrs, events, children, data, this) || []
+          
           let parentChildren = vnode.parent ? vnode.parent.children : elements
           let i = parentChildren.indexOf(vnode)
           parentChildren.splice(i, 1, ...childNodes)
-        }
-      }
-      else if (vnode.name === '@if') {
-        let attrs = vnode.attrs
-        let condition = attrs.condition
-        let children = vnode.children
-        let parentChildren = vnode.parent ? vnode.parent.children : elements
-        let i = parentChildren.indexOf(vnode)
-
-        if (eval(condition)) {
-          parentChildren.splice(i, 1, ...children)
-        }
-        else {
-          parentChildren.splice(i, 1)
         }
       }
     })
@@ -182,11 +129,19 @@ export default class VirtualDOM {
   update(data) {
     this.data = merge(this.data, data)
 
-    let lastVnodes = this.vnodes
-    let newVnodes = this.createVirtualDOM()
-    let patches = diff(lastVnodes, newVnodes, null)
+    if (this.$$transaction) {
+      clearTimeout(this.$$transaction)
+    }
 
-    patch(patches, lastVnodes[0].$element.parentNode)
+    this.$$transaction = setTimeout(() => {
+      let lastVnodes = this.vnodes
+      let newVnodes = this.createVirtualDOM()
+      let patches = diff(lastVnodes, newVnodes, null)
+  
+      patch(patches, lastVnodes[0].$element.parentNode)
+
+      this.$$transaction = null
+    }, 10)
   }
   destroy() {
     this.elements.forEach(vnode => {
