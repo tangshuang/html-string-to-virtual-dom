@@ -6434,12 +6434,12 @@ function done(stream, er, data) {
 
 "use strict";
 /* harmony export (immutable) */ __webpack_exports__["a"] = createElement;
-function createElement(node) {
-  var name = node.name;
+function createElement(vnode) {
+  var name = vnode.name;
   var el = document.createElement(name);
-  var attrs = node.attrs;
-  // let props = node.props = node.props || {}
-  var events = node.events;
+  var attrs = vnode.attrs;
+  // let props = vnode.props = vnode.props || {}
+  var events = vnode.events;
 
   var attrKeys = Object.keys(attrs);
   if (attrKeys && attrKeys.length) {
@@ -6477,15 +6477,15 @@ function createElement(node) {
     });
   }
 
-  if (node.text) {
-    el.innerText = node.text;
-    node.$element = el;
-    el.$vnode = node;
+  if (vnode.text) {
+    el.innerText = vnode.text;
+    vnode.$element = el;
+    el.$vnode = vnode;
     return el;
   }
 
-  if (node.children && node.children.length) {
-    node.children.forEach(function (child) {
+  if (vnode.children && vnode.children.length) {
+    vnode.children.forEach(function (child) {
       var childEl = createElement(child);
       el.appendChild(childEl);
       child.$element = childEl;
@@ -6493,8 +6493,8 @@ function createElement(node) {
     });
   }
 
-  node.$element = el;
-  el.$vnode = node;
+  vnode.$element = el;
+  el.$vnode = vnode;
 
   return el;
 }
@@ -6565,7 +6565,7 @@ var VirtualDOM = function () {
     this.events = events;
     this.directives = Object(__WEBPACK_IMPORTED_MODULE_5__utils_merge__["a" /* default */])(__WEBPACK_IMPORTED_MODULE_6__directives__["a" /* default */], directives);
     this.selector = selector;
-    this.vnodes = this.createVirtualDOM();
+    this.vtree = this.createVirtualDOM();
   }
 
   _createClass(VirtualDOM, [{
@@ -6585,7 +6585,7 @@ var VirtualDOM = function () {
       }
 
       var self = this;
-      var elements = [];
+      var vnodes = [];
       var recordtree = [];
       var createVNode = function createVNode(name, attrs) {
         var obj = {
@@ -6629,7 +6629,7 @@ var VirtualDOM = function () {
           }
 
           recordtree.push(vnode);
-          elements.push(vnode);
+          vnodes.push(vnode);
         },
         ontext: function ontext(text) {
           var vnode = recordtree[recordtree.length - 1];
@@ -6645,7 +6645,7 @@ var VirtualDOM = function () {
       parser.done();
 
       var directives = this.directives;
-      elements.forEach(function (vnode) {
+      vnodes.forEach(function (vnode) {
         if (vnode.name.substring(0, 1) === '@') {
           var directiveName = vnode.name.substring(1);
           if (typeof directives[directiveName] === 'function') {
@@ -6654,16 +6654,16 @@ var VirtualDOM = function () {
             var events = vnode.events;
             var childNodes = directives[directiveName](attrs, events, children, data, _this) || [];
 
-            var parentChildren = vnode.parent ? vnode.parent.children : elements;
+            var parentChildren = vnode.parent ? vnode.parent.children : vnodes;
             var i = parentChildren.indexOf(vnode);
             parentChildren.splice.apply(parentChildren, [i, 1].concat(_toConsumableArray(childNodes)));
           }
         }
       });
 
-      this.elements = elements;
+      this.vnodes = vnodes;
 
-      var roots = elements.filter(function (item) {
+      var roots = vnodes.filter(function (item) {
         return !item.parent;
       });
       return roots;
@@ -6671,10 +6671,9 @@ var VirtualDOM = function () {
   }, {
     key: 'createDOM',
     value: function createDOM() {
-      var elements = this.vnodes.map(function (item) {
+      return this.vtree.map(function (item) {
         return Object(__WEBPACK_IMPORTED_MODULE_1__createElement__["a" /* default */])(item);
       });
-      return elements;
     }
   }, {
     key: 'render',
@@ -6692,11 +6691,11 @@ var VirtualDOM = function () {
       }
 
       var selector = this.selector;
-      var elements = this.createDOM();
+      var vtree = this.createDOM();
       var container = isNode(selector) || isElement(selector) ? selector : document.querySelector(selector);
 
       container.innerHTML = '';
-      elements.forEach(function (item) {
+      vtree.forEach(function (item) {
         return container.appendChild(item);
       });
     }
@@ -6712,11 +6711,11 @@ var VirtualDOM = function () {
       }
 
       this.$$transaction = setTimeout(function () {
-        var lastVnodes = _this2.vnodes;
-        var newVnodes = _this2.createVirtualDOM();
-        var patches = Object(__WEBPACK_IMPORTED_MODULE_2__diff__["a" /* default */])(lastVnodes, newVnodes, null);
+        var lastVtree = _this2.vtree;
+        var newVtree = _this2.createVirtualDOM();
+        var patches = Object(__WEBPACK_IMPORTED_MODULE_2__diff__["a" /* default */])(lastVtree, newVtree, null);
 
-        Object(__WEBPACK_IMPORTED_MODULE_3__patch__["a" /* default */])(patches, lastVnodes[0].$element.parentNode);
+        Object(__WEBPACK_IMPORTED_MODULE_3__patch__["a" /* default */])(patches, lastVtree[0].$element.parentNode);
 
         _this2.$$transaction = null;
       }, 10);
@@ -6724,12 +6723,19 @@ var VirtualDOM = function () {
   }, {
     key: 'destroy',
     value: function destroy() {
-      this.elements.forEach(function (vnode) {
+      var roots = [];
+      this.vtree.forEach(function (vnode) {
+        roots.push(vnode.$element);
+      });
+      this.vnodes.forEach(function (vnode) {
         var el = vnode.$element;
         vnode.$element = null;
         el.$vnode = null;
+      });
+      roots.forEach(function (el) {
         el.parentNode.removeChild(el);
       });
+      roots = null;
     }
   }]);
 
@@ -8997,7 +9003,7 @@ function diff(oldNodes, newNodes) {
   }
   finalNodes.splice(cursor + 1, finalNodes.length - cursor);
 
-  // update this.vnodes
+  // update this.vtree
   oldNodes.splice(0, oldNodes.length);
   finalNodes.forEach(function (item) {
     return oldNodes.push(item);

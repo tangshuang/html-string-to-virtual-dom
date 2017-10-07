@@ -1,9 +1,9 @@
-export default function createElement(node) {
-  let name = node.name
+export default function createElement(vnode) {
+  let name = vnode.name
   let el = document.createElement(name)
-  let attrs = node.attrs
-  // let props = node.props = node.props || {}
-  let events = node.events
+  let attrs = vnode.attrs
+  // let props = vnode.props = vnode.props || {}
+  let events = vnode.events
 
   let attrKeys = Object.keys(attrs)
   if (attrKeys && attrKeys.length) {
@@ -41,15 +41,15 @@ export default function createElement(node) {
     })
   }
 
-  if (node.text) {
-    el.innerText = node.text
-    node.$element = el
-    el.$vnode = node
+  if (vnode.text) {
+    el.innerText = vnode.text
+    vnode.$element = el
+    el.$vnode = vnode
     return el
   }
 
-  if (node.children && node.children.length) {
-    node.children.forEach(child => {
+  if (vnode.children && vnode.children.length) {
+    vnode.children.forEach(child => {
       let childEl = createElement(child)
       el.appendChild(childEl)
       child.$element = childEl
@@ -57,8 +57,8 @@ export default function createElement(node) {
     })
   }
 
-  node.$element = el
-  el.$vnode = node
+  vnode.$element = el
+  el.$vnode = vnode
 
   return el
 }

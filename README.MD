@@ -192,11 +192,11 @@ The condition to be use. There can be interpolations in condition. ie. `conditio
 
 After a instance created, you can get these properties and methods from it:
 
+### vtree
+
+An array. The VNodes Tree (which is the same structure as DOM structure) of this instance.
+
 ### vnodes
-
-The VNodes of this instance.
-
-### elements
 
 Flat structure VNodes list. All VNodes are in this array. You can use `filter` method to pick out what you want.
 

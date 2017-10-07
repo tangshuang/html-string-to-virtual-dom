@@ -71,7 +71,7 @@ export default function diff(oldNodes, newNodes, parentNode = null) {
   }
   finalNodes.splice(cursor + 1, finalNodes.length - cursor)
 
-  // update this.vnodes
+  // update this.vtree
   oldNodes.splice(0, oldNodes.length)
   finalNodes.forEach(item => oldNodes.push(item))
 

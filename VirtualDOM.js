@@ -14,7 +14,7 @@ export default class VirtualDOM {
     this.events = events
     this.directives = merge(defaultDirectives, directives)
     this.selector = selector
-    this.vnodes = this.createVirtualDOM()
+    this.vtree = this.createVirtualDOM()
   }
   createVirtualDOM() {
     let template = this.template
@@ -29,7 +29,7 @@ export default class VirtualDOM {
     }
 
     let self = this
-    let elements = []
+    let vnodes = []
     let recordtree = []
     let createVNode = (name, attrs) => {
       let obj = {
@@ -73,7 +73,7 @@ export default class VirtualDOM {
         }
 
         recordtree.push(vnode)
-        elements.push(vnode)
+        vnodes.push(vnode)
       },
       ontext(text) {
         let vnode = recordtree[recordtree.length - 1]
@@ -89,7 +89,7 @@ export default class VirtualDOM {
     parser.done()
 
     let directives = this.directives
-    elements.forEach(vnode => {
+    vnodes.forEach(vnode => {
       if (vnode.name.substring(0, 1) === '@') {
         let directiveName = vnode.name.substring(1)
         if (typeof directives[directiveName] === 'function') {
@@ -98,21 +98,20 @@ export default class VirtualDOM {
           let events = vnode.events
           let childNodes = directives[directiveName](attrs, events, children, data, this) || []
           
-          let parentChildren = vnode.parent ? vnode.parent.children : elements
+          let parentChildren = vnode.parent ? vnode.parent.children : vnodes
           let i = parentChildren.indexOf(vnode)
           parentChildren.splice(i, 1, ...childNodes)
         }
       }
     })
 
-    this.elements = elements
+    this.vnodes = vnodes
 
-    let roots = elements.filter(item => !item.parent)
+    let roots = vnodes.filter(item => !item.parent)
     return roots
   }
   createDOM() {
-    let elements = this.vnodes.map(item => createElement(item))
-    return elements
+    return this.vtree.map(item => createElement(item))
   }
   render() {
     if (!this.selector) {
@@ -134,11 +133,11 @@ export default class VirtualDOM {
     }
 
     let selector = this.selector
-    let elements = this.createDOM()
+    let vtree = this.createDOM()
     let container = (isNode(selector) || isElement(selector)) ? selector : document.querySelector(selector)
 
     container.innerHTML = ''
-    elements.forEach(item => container.appendChild(item))
+    vtree.forEach(item => container.appendChild(item))
   }
   update(data) {
     this.data = merge(this.data, data)
@@ -148,21 +147,28 @@ export default class VirtualDOM {
     }
 
     this.$$transaction = setTimeout(() => {
-      let lastVnodes = this.vnodes
-      let newVnodes = this.createVirtualDOM()
-      let patches = diff(lastVnodes, newVnodes, null)
+      let lastVtree = this.vtree
+      let newVtree = this.createVirtualDOM()
+      let patches = diff(lastVtree, newVtree, null)
   
-      patch(patches, lastVnodes[0].$element.parentNode)
+      patch(patches, lastVtree[0].$element.parentNode)
 
       this.$$transaction = null
     }, 10)
   }
   destroy() {
-    this.elements.forEach(vnode => {
+    let roots = []
+    this.vtree.forEach(vnode => {
+      roots.push(vnode.$element)
+    })
+    this.vnodes.forEach(vnode => {
       let el = vnode.$element
       vnode.$element = null
       el.$vnode = null
+    })
+    roots.forEach(el => {
       el.parentNode.removeChild(el)
     })
+    roots = null
   }
 }
