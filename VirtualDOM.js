@@ -141,7 +141,12 @@ export default class VirtualDOM {
   }
   update(data) {
     this.data = merge(this.data, data)
+    
+    this.$$transactionPromises = this.$$transactionPromises || []
+    this.$$transactionResolves = this.$$transactionResolves || []
 
+    this.$$transactionPromises.push(new Promise(resolve => this.$$transactionResolves.push(resolve)))
+    
     if (this.$$transaction) {
       clearTimeout(this.$$transaction)
     }
@@ -153,8 +158,12 @@ export default class VirtualDOM {
   
       patch(patches, lastVtree[0].$element.parentNode)
 
-      this.$$transaction = null
+      this.$$transactionResolves.forEach(resolve => resolve())
+      this.$$transactionResolves = []
+      this.$$transactionPromises = []
     }, 10)
+
+    return Promise.all(this.$$transactionPromises)
   }
   destroy() {
     let roots = []

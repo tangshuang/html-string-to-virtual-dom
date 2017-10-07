@@ -28,6 +28,10 @@ let vdom = new VirtualDOM({
       <@my-directive ontrigger={{:trigger}}>
         <span>this is my custom directive</span>
       </@my-directive>
+      <p>
+        <a href="javascript:" onclick={{:transact}}>transaction testing</a> 
+        <span>{{transactext}}</span>
+      </p>
     </div>
   `,
   data: {
@@ -38,6 +42,7 @@ let vdom = new VirtualDOM({
       sam: 'yellow',
     },
     isShow: true,
+    transactext: 'state1',
   },
   events: {
     input(e) {
@@ -57,6 +62,13 @@ let vdom = new VirtualDOM({
     },
     trigger(msg) {
       alert(msg)
+    },
+    transact() {
+      vdom.update({ transactext: 'state2' }).then(() => {
+        console.log(vdom.data.transactext)
+      })
+      console.log(vdom.data.transactext)
+      vdom.update({ transactext: 'state3' })
     },
   },
   directives: {

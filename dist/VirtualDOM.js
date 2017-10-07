@@ -6706,6 +6706,13 @@ var VirtualDOM = function () {
 
       this.data = Object(__WEBPACK_IMPORTED_MODULE_5__utils_merge__["a" /* default */])(this.data, data);
 
+      this.$$transactionPromises = this.$$transactionPromises || [];
+      this.$$transactionResolves = this.$$transactionResolves || [];
+
+      this.$$transactionPromises.push(new Promise(function (resolve) {
+        return _this2.$$transactionResolves.push(resolve);
+      }));
+
       if (this.$$transaction) {
         clearTimeout(this.$$transaction);
       }
@@ -6717,8 +6724,14 @@ var VirtualDOM = function () {
 
         Object(__WEBPACK_IMPORTED_MODULE_3__patch__["a" /* default */])(patches, lastVtree[0].$element.parentNode);
 
-        _this2.$$transaction = null;
+        _this2.$$transactionResolves.forEach(function (resolve) {
+          return resolve();
+        });
+        _this2.$$transactionResolves = [];
+        _this2.$$transactionPromises = [];
       }, 10);
+
+      return Promise.all(this.$$transactionPromises);
     }
   }, {
     key: 'destroy',
