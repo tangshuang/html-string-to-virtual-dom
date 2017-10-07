@@ -120,7 +120,7 @@ let vdom = new VirtualDOM({
   directives: {
     'my-directive': (attrs, events, children, context) => {
       // defination code...
-      // must return a vnodes array
+      // must return a vtree array
     },
   },
 })
@@ -140,7 +140,7 @@ Directive's events functions in html string template. Yes, it supports events at
 
 *children*
 
-Directive's children vnodes, sub tags in html string template.
+Directive's children vtree, sub tags in html string template.
 
 *context*
 
@@ -148,7 +148,7 @@ Directive's children vnodes, sub tags in html string template.
 
 *@return*
 
-The function must return an array which is made up with vnodes. `children` are vnodes. If you want to add new vnodes, you can use another VirtualDOM instance to implement. Look into `demo.html`.
+The function must return an array which is made up with vtree. `children` are vtree. If you want to add new vtree, you can use another VirtualDOM instance to implement. Look into `demo.html`.
 
 ### Default Directives
 
@@ -202,13 +202,13 @@ Flat structure VNodes list. All VNodes are in this array. You can use `filter` m
 
 ### createVirtualDOM()
 
-When a vdom instance created, you may just want to get its vnodes, not render to document, use `createVirtualDOM`:
+When a vdom instance created, you may just want to get its vtree, not render to document, use `createVirtualDOM`:
 
 ```
 var vdom = new VirtualDOM({
   template: '<div class="my-box"></div>'
 })
-var vnodes = vdom.createVirtualDOM()
+var vtree = vdom.createVirtualDOM()
 ```
 
 This is useful when you define a directive.
