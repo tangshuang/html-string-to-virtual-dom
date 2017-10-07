@@ -1,35 +1,61 @@
 import createElement from './createElement'
 
-export default function patch(patches, topLevelElement) {
+export default function patch(patches, vtree, container) {
   patches.forEach(item => {
-    let {action, target, context} = item
-    let $element = target === null ? topLevelElement : target.$element
-    switch (action) {
-      case 'remove':
-        $element.parentNode.removeChild($element)
-        $element.$vnode = null
-        target.$element = null
-        break
-      case 'append':
-        $element.appendChild(createElement(context))
-        break
-      case 'insert':
-        $element.parentNode.insertBefore(createElement(context), $element)
-        break
-      case 'move':
-        $element.parentNode.insertBefore(context.$element, $element)
-        break
-      case 'changeText':
-        $element.innerText = context
-        break
-      case 'changeAttribute':
-        let newAttrs = context
-        newAttrs.forEach(attr => {
-          $element.setAttribute(attr.key, attr.value)
-        })
-        break
-      default:
-        ;
+    let { type, parent, vnode } = item
+    let $parent = parent === null ? container : parent.$element
+    let borthers = parent === null ? vtree : parent.children
+
+    if (type === 'remove') {
+      let $element = vnode.$element
+      $element.$vnode = null // remove $vnode on DOM element
+      $parent.removeChild($element) // remove DOM element
+      vnode.$element = null // remove $element on vnode
+      let index = borthers.indexOf(vnode)
+      borthers.splice(index, 1) // remove vnode from vtree
+    }
+    else if (type === 'append') {
+      let $element = createElement(vnode)
+      $parent.appendChild($element)
+      borthers.push(vnode)
+    }
+    else if (type === 'insert') {
+      let $element = createElement(vnode)
+      let target = item.target
+      let $target = target.$element
+      $parent.insertBefore($element, $target)
+      let index = borthers.indexOf(target)
+      borthers.splice(index, 0, vnode)
+    }
+    else if (type === 'move') {
+      let $element = vnode.$element
+      let target = item.target
+      let $target = target.$element
+      $parent.insertBefore($element, $target)
+      let index = borthers.indexOf(vnode)
+      borthers.splice(index, 1)
+      let targetIndex = borthers.indexOf(target)
+      borthers.splice(targetIndex, 0, vnode)
+    }
+    else if (type === 'changeText') {
+      let $element = vnode.$element
+      let text = item.text
+      $element.innerText = text
+      vnode.children = []
+      vnode.text = text
+    }
+    else if (type === 'changeAttribute') {
+      let $element = vnode.$element
+      let changedAttrs = item.attributes
+      changedAttrs.forEach(attr => {
+        let { key, value } = attr
+        $element.setAttribute(key, value)
+        vnode.attrs[key] = value
+      })
+
+      let attrs = vnode.attrs
+      vnode.id = attrs.id
+      vnode.class = attrs.class ? attrs.class.split(' ') : []
     }
   })
 }

@@ -1,4 +1,4 @@
-export default function diff(oldNodes, newNodes, parentNode = null) {
+export default function diff(oldNodes, newNodes, parentVNode) {
   let oldIdentifies = oldNodes.map(vnode => identify(vnode))
   let newIdentifies = newNodes.map(vnode => identify(vnode))
 
@@ -10,7 +10,7 @@ export default function diff(oldNodes, newNodes, parentNode = null) {
   oldIdentifies.forEach((id, i) => {
     let oldNode = oldNodes[i]
     if (newIdentifies.indexOf(id) === -1) {
-      patches.push(makePatch('remove', oldNode))
+      patches.push({ type: 'remove', parent: parentVNode, vnode: oldNode })
     }
     else {
       finalIdentities.push(id)
@@ -25,7 +25,7 @@ export default function diff(oldNodes, newNodes, parentNode = null) {
 
     // all nodes are new
     if (oldIdentifies.length === 0) {
-      patches.push(makePatch('append', parentNode, newNode))
+      patches.push({ type: 'append', parent: parentVNode, vnode: newNode })
       return
     }
 
@@ -37,13 +37,13 @@ export default function diff(oldNodes, newNodes, parentNode = null) {
 
     // identifies are at the same position, means node has not changed
     if (id === targetIndentity) {
-      patches = patches.concat(diffSameNodes(targetNode, newNode))
+      patches = patches.concat(diffSameNodes(targetNode, newNode, parentVNode))
     }
     // identifies are NOT at the same position, but exists in old nodes, means node has been moved
     else if (foundPosition !== -1) {
       let oldNode = finalNodes[foundPosition]
       let oldIndentity = finalIdentities[foundPosition]
-      patches.push(makePatch('move', targetNode, oldNode))
+      patches.push({ type: 'move', parent: parentVNode, vnode: oldNode, target: targetNode })
 
       finalNodes.splice(foundPosition, 1)
       finalNodes.splice(i, 0, oldNode)
@@ -52,28 +52,24 @@ export default function diff(oldNodes, newNodes, parentNode = null) {
     }
     // not exists, insert
     else if (i < finalIdentities.length) {
-      patches.push(makePatch('insert', targetNode, newNode))
+      patches.push({ type: 'insert', parent: parentVNode, vnode: newNode, target: targetNode })
       finalNodes.splice(i, 0, newNode)
       finalIdentities.splice(i, 0, id)
     }
     // not exists, append
     else {
-      patches.push(makePatch('append', parentNode, newNode))
+      patches.push({ type: 'append', parent: parentVNode, vnode: newNode })
       finalNodes.push(newNode)
       finalIdentities.push(id)
     }
   })
 
-  // delete no use nodes
+  // remove no use nodes
   for (let i = cursor + 1; i < finalNodes.length; i ++) {
     let oldNode = finalNodes[i]
-    patches.push(makePatch('remove', oldNode))
+    patches.push({ type: 'remove', parent: parentVNode, vnode: oldNode })
   }
-  finalNodes.splice(cursor + 1, finalNodes.length - cursor)
-
-  // update this.vtree
-  oldNodes.splice(0, oldNodes.length)
-  finalNodes.forEach(item => oldNodes.push(item))
+  // finalNodes.splice(cursor + 1, finalNodes.length - cursor) // there is no need to do this any more
 
   return patches
 }
@@ -85,24 +81,16 @@ function identify(vnode) {
   return vnode.name + ':' + Object.keys(vnode.attrs).join(',') + '|' + !!vnode.text
 }
 
-function makePatch(action, target, context) {
-  return {
-    action,
-    target,
-    context,
-  }
-}
-
-function diffSameNodes(oldNode, newNode) {
+function diffSameNodes(oldNode, newNode, parentVNode) {
   let patches = []
 
   if (oldNode.text !== newNode.text) {
-    patches.push(makePatch('changeText', oldNode, newNode.text))
+    patches.push({ type: 'changeText', parent: parentVNode, vnode: oldNode, text: newNode.text })
   }
 
   let attrsPatches = diffAttributes(oldNode, newNode)
   if (attrsPatches.length) {
-    patches = patches.push(makePatch('changeAttribute', oldNode, attrsPatches))
+    patches.push({ type: 'changeAttribute', parent: parentVNode, vnode: oldNode, attributes: attrsPatches })
   }
 
   let oldChildren = oldNode.children

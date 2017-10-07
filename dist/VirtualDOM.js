@@ -6530,13 +6530,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__utils_merge__ = __webpack_require__(66);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__directives__ = __webpack_require__(67);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__utils_interpose__ = __webpack_require__(29);
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__utils_isDOM__ = __webpack_require__(68);
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 
 
 
@@ -6644,6 +6644,20 @@ var VirtualDOM = function () {
       parser.parseChunk(template);
       parser.done();
 
+      var getChildrenVNOdes = function getChildrenVNOdes(vnode) {
+        var res = [];
+        if (vnode.children.length) {
+          vnode.children.forEach(function (item) {
+            res.push(item);
+            if (item.children.length) {
+              res = res.concat(getChildrenVNOdes(item));
+            }
+          });
+        }
+        return res;
+      };
+      var directiveOriginalChildrenVNodes = [];
+      var directiveGenerateChildrenVNodes = [];
       var directives = this.directives;
       vnodes.forEach(function (vnode) {
         if (vnode.name.substring(0, 1) === '@') {
@@ -6657,11 +6671,23 @@ var VirtualDOM = function () {
             var parentChildren = vnode.parent ? vnode.parent.children : vnodes;
             var i = parentChildren.indexOf(vnode);
             parentChildren.splice.apply(parentChildren, [i, 1].concat(_toConsumableArray(childNodes)));
+
+            directiveOriginalChildrenVNodes = directiveOriginalChildrenVNodes.concat(getChildrenVNOdes(vnode));
+            directiveGenerateChildrenVNodes = directiveGenerateChildrenVNodes.concat(getChildrenVNOdes({ children: childNodes }));
           }
+          vnode._directive = true;
         }
       });
+      directiveOriginalChildrenVNodes.forEach(function (vnode) {
+        return vnode._directive = true;
+      });
+      directiveGenerateChildrenVNodes.forEach(function (vnode) {
+        return vnodes.push(vnode);
+      });
 
-      this.vnodes = vnodes;
+      this.vnodes = vnodes.filter(function (vnode) {
+        return !vnode._directive;
+      });
 
       var roots = vnodes.filter(function (item) {
         return !item.parent;
@@ -6682,18 +6708,11 @@ var VirtualDOM = function () {
         return;
       }
 
-      function isNode(o) {
-        return (typeof Node === 'undefined' ? 'undefined' : _typeof(Node)) === "object" ? o instanceof Node : o && (typeof o === 'undefined' ? 'undefined' : _typeof(o)) === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string";
-      }
-
-      function isElement(o) {
-        return (typeof HTMLElement === 'undefined' ? 'undefined' : _typeof(HTMLElement)) === "object" ? o instanceof HTMLElement : o && (typeof o === 'undefined' ? 'undefined' : _typeof(o)) === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string";
-      }
-
       var selector = this.selector;
       var vtree = this.createDOM();
-      var container = isNode(selector) || isElement(selector) ? selector : document.querySelector(selector);
+      var container = Object(__WEBPACK_IMPORTED_MODULE_8__utils_isDOM__["b" /* isNode */])(selector) || Object(__WEBPACK_IMPORTED_MODULE_8__utils_isDOM__["a" /* isElement */])(selector) ? selector : document.querySelector(selector);
 
+      this.container = container;
       container.innerHTML = '';
       vtree.forEach(function (item) {
         return container.appendChild(item);
@@ -6720,9 +6739,9 @@ var VirtualDOM = function () {
       this.$$transaction = setTimeout(function () {
         var lastVtree = _this2.vtree;
         var newVtree = _this2.createVirtualDOM();
-        var patches = Object(__WEBPACK_IMPORTED_MODULE_2__diff__["a" /* default */])(lastVtree, newVtree, null);
 
-        Object(__WEBPACK_IMPORTED_MODULE_3__patch__["a" /* default */])(patches, lastVtree[0].$element.parentNode);
+        var patches = Object(__WEBPACK_IMPORTED_MODULE_2__diff__["a" /* default */])(lastVtree, newVtree, null);
+        Object(__WEBPACK_IMPORTED_MODULE_3__patch__["a" /* default */])(patches, _this2.vtree, _this2.container); // this.vtree will be updated
 
         _this2.$$transactionResolves.forEach(function (resolve) {
           return resolve();
@@ -6742,8 +6761,8 @@ var VirtualDOM = function () {
       });
       this.vnodes.forEach(function (vnode) {
         var el = vnode.$element;
-        vnode.$element = null;
         el.$vnode = null;
+        vnode.$element = null;
       });
       roots.forEach(function (el) {
         el.parentNode.removeChild(el);
@@ -8938,9 +8957,7 @@ CollectingHandler.prototype.restart = function () {
 
 "use strict";
 /* harmony export (immutable) */ __webpack_exports__["a"] = diff;
-function diff(oldNodes, newNodes) {
-  var parentNode = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-
+function diff(oldNodes, newNodes, parentVNode) {
   var oldIdentifies = oldNodes.map(function (vnode) {
     return identify(vnode);
   });
@@ -8956,7 +8973,7 @@ function diff(oldNodes, newNodes) {
   oldIdentifies.forEach(function (id, i) {
     var oldNode = oldNodes[i];
     if (newIdentifies.indexOf(id) === -1) {
-      patches.push(makePatch('remove', oldNode));
+      patches.push({ type: 'remove', parent: parentVNode, vnode: oldNode });
     } else {
       finalIdentities.push(id);
       finalNodes.push(oldNode);
@@ -8970,7 +8987,7 @@ function diff(oldNodes, newNodes) {
 
     // all nodes are new
     if (oldIdentifies.length === 0) {
-      patches.push(makePatch('append', parentNode, newNode));
+      patches.push({ type: 'append', parent: parentVNode, vnode: newNode });
       return;
     }
 
@@ -8982,13 +8999,13 @@ function diff(oldNodes, newNodes) {
 
     // identifies are at the same position, means node has not changed
     if (id === targetIndentity) {
-      patches = patches.concat(diffSameNodes(targetNode, newNode));
+      patches = patches.concat(diffSameNodes(targetNode, newNode, parentVNode));
     }
     // identifies are NOT at the same position, but exists in old nodes, means node has been moved
     else if (foundPosition !== -1) {
         var oldNode = finalNodes[foundPosition];
         var oldIndentity = finalIdentities[foundPosition];
-        patches.push(makePatch('move', targetNode, oldNode));
+        patches.push({ type: 'move', parent: parentVNode, vnode: oldNode, target: targetNode });
 
         finalNodes.splice(foundPosition, 1);
         finalNodes.splice(i, 0, oldNode);
@@ -8997,30 +9014,24 @@ function diff(oldNodes, newNodes) {
       }
       // not exists, insert
       else if (i < finalIdentities.length) {
-          patches.push(makePatch('insert', targetNode, newNode));
+          patches.push({ type: 'insert', parent: parentVNode, vnode: newNode, target: targetNode });
           finalNodes.splice(i, 0, newNode);
           finalIdentities.splice(i, 0, id);
         }
         // not exists, append
         else {
-            patches.push(makePatch('append', parentNode, newNode));
+            patches.push({ type: 'append', parent: parentVNode, vnode: newNode });
             finalNodes.push(newNode);
             finalIdentities.push(id);
           }
   });
 
-  // delete no use nodes
+  // remove no use nodes
   for (var i = cursor + 1; i < finalNodes.length; i++) {
     var oldNode = finalNodes[i];
-    patches.push(makePatch('remove', oldNode));
+    patches.push({ type: 'remove', parent: parentVNode, vnode: oldNode });
   }
-  finalNodes.splice(cursor + 1, finalNodes.length - cursor);
-
-  // update this.vtree
-  oldNodes.splice(0, oldNodes.length);
-  finalNodes.forEach(function (item) {
-    return oldNodes.push(item);
-  });
+  // finalNodes.splice(cursor + 1, finalNodes.length - cursor) // there is no need to do this any more
 
   return patches;
 }
@@ -9032,24 +9043,16 @@ function identify(vnode) {
   return vnode.name + ':' + Object.keys(vnode.attrs).join(',') + '|' + !!vnode.text;
 }
 
-function makePatch(action, target, context) {
-  return {
-    action: action,
-    target: target,
-    context: context
-  };
-}
-
-function diffSameNodes(oldNode, newNode) {
+function diffSameNodes(oldNode, newNode, parentVNode) {
   var patches = [];
 
   if (oldNode.text !== newNode.text) {
-    patches.push(makePatch('changeText', oldNode, newNode.text));
+    patches.push({ type: 'changeText', parent: parentVNode, vnode: oldNode, text: newNode.text });
   }
 
   var attrsPatches = diffAttributes(oldNode, newNode);
   if (attrsPatches.length) {
-    patches = patches.push(makePatch('changeAttribute', oldNode, attrsPatches));
+    patches.push({ type: 'changeAttribute', parent: parentVNode, vnode: oldNode, attributes: attrsPatches });
   }
 
   var oldChildren = oldNode.children;
@@ -9102,39 +9105,62 @@ function findIndentityIndex(id, ids, cursor) {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__createElement__ = __webpack_require__(28);
 
 
-function patch(patches, topLevelElement) {
+function patch(patches, vtree, container) {
   patches.forEach(function (item) {
-    var action = item.action,
-        target = item.target,
-        context = item.context;
+    var type = item.type,
+        parent = item.parent,
+        vnode = item.vnode;
 
-    var $element = target === null ? topLevelElement : target.$element;
-    switch (action) {
-      case 'remove':
-        $element.parentNode.removeChild($element);
-        $element.$vnode = null;
-        target.$element = null;
-        break;
-      case 'append':
-        $element.appendChild(Object(__WEBPACK_IMPORTED_MODULE_0__createElement__["a" /* default */])(context));
-        break;
-      case 'insert':
-        $element.parentNode.insertBefore(Object(__WEBPACK_IMPORTED_MODULE_0__createElement__["a" /* default */])(context), $element);
-        break;
-      case 'move':
-        $element.parentNode.insertBefore(context.$element, $element);
-        break;
-      case 'changeText':
-        $element.innerText = context;
-        break;
-      case 'changeAttribute':
-        var newAttrs = context;
-        newAttrs.forEach(function (attr) {
-          $element.setAttribute(attr.key, attr.value);
-        });
-        break;
-      default:
-        ;
+    var $parent = parent === null ? container : parent.$element;
+    var borthers = parent === null ? vtree : parent.children;
+
+    if (type === 'remove') {
+      var $element = vnode.$element;
+      $element.$vnode = null; // remove $vnode on DOM element
+      $parent.removeChild($element); // remove DOM element
+      vnode.$element = null; // remove $element on vnode
+      var index = borthers.indexOf(vnode);
+      borthers.splice(index, 1); // remove vnode from vtree
+    } else if (type === 'append') {
+      var _$element = Object(__WEBPACK_IMPORTED_MODULE_0__createElement__["a" /* default */])(vnode);
+      $parent.appendChild(_$element);
+      borthers.push(vnode);
+    } else if (type === 'insert') {
+      var _$element2 = Object(__WEBPACK_IMPORTED_MODULE_0__createElement__["a" /* default */])(vnode);
+      var target = item.target;
+      var $target = target.$element;
+      $parent.insertBefore(_$element2, $target);
+      var _index = borthers.indexOf(target);
+      borthers.splice(_index, 0, vnode);
+    } else if (type === 'move') {
+      var _$element3 = vnode.$element;
+      var _target = item.target;
+      var _$target = _target.$element;
+      $parent.insertBefore(_$element3, _$target);
+      var _index2 = borthers.indexOf(vnode);
+      borthers.splice(_index2, 1);
+      var targetIndex = borthers.indexOf(_target);
+      borthers.splice(targetIndex, 0, vnode);
+    } else if (type === 'changeText') {
+      var _$element4 = vnode.$element;
+      var text = item.text;
+      _$element4.innerText = text;
+      vnode.children = [];
+      vnode.text = text;
+    } else if (type === 'changeAttribute') {
+      var _$element5 = vnode.$element;
+      var changedAttrs = item.attributes;
+      changedAttrs.forEach(function (attr) {
+        var key = attr.key,
+            value = attr.value;
+
+        _$element5.setAttribute(key, value);
+        vnode.attrs[key] = value;
+      });
+
+      var attrs = vnode.attrs;
+      vnode.id = attrs.id;
+      vnode.class = attrs.class ? attrs.class.split(' ') : [];
     }
   });
 }
@@ -9205,6 +9231,23 @@ function merge(obj1, obj2) {
     }
   }
 });
+
+/***/ }),
+/* 68 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony export (immutable) */ __webpack_exports__["b"] = isNode;
+/* harmony export (immutable) */ __webpack_exports__["a"] = isElement;
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function isNode(o) {
+  return (typeof Node === "undefined" ? "undefined" : _typeof(Node)) === "object" ? o instanceof Node : o && (typeof o === "undefined" ? "undefined" : _typeof(o)) === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string";
+}
+
+function isElement(o) {
+  return (typeof HTMLElement === "undefined" ? "undefined" : _typeof(HTMLElement)) === "object" ? o instanceof HTMLElement : o && (typeof o === "undefined" ? "undefined" : _typeof(o)) === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string";
+}
 
 /***/ })
 /******/ ]);

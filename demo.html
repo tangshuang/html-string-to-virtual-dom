@@ -29,8 +29,11 @@ let vdom = new VirtualDOM({
         <span>this is my custom directive</span>
       </@my-directive>
       <p>
-        <a href="javascript:" onclick={{:transact}}>transaction testing</a> 
+        <a href="javascript:" onclick="{{:transact}}">transaction testing</a> 
         <span>{{transactext}}</span>
+      </p>
+      <p>
+        <a href="javascript:" onclick="{{:changeColor}}" style="color: {{fontColor}}">change color</a>
       </p>
     </div>
   `,
@@ -43,6 +46,7 @@ let vdom = new VirtualDOM({
     },
     isShow: true,
     transactext: 'state1',
+    fontColor: 'blue',
   },
   events: {
     input(e) {
@@ -69,6 +73,9 @@ let vdom = new VirtualDOM({
       })
       console.log(vdom.data.transactext)
       vdom.update({ transactext: 'state3' })
+    },
+    changeColor() {
+      vdom.update({ fontColor: vdom.data.fontColor === 'red' ? 'blue' : 'red' })
     },
   },
   directives: {

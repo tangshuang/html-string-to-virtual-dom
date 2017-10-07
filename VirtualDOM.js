@@ -6,6 +6,7 @@ import foreach from './utils/foreach'
 import merge from './utils/merge'
 import defaultDirectives from './directives'
 import interpose from './utils/interpose'
+import { isNode, isElement } from './utils/isDOM'
 
 export default class VirtualDOM {
   constructor({template, data = {}, events = {}, directives = {}, selector}) {
@@ -88,6 +89,20 @@ export default class VirtualDOM {
     parser.parseChunk(template)
     parser.done()
 
+    let getChildrenVNOdes = vnode => {
+      let res = []
+      if (vnode.children.length) {
+        vnode.children.forEach(item => {
+          res.push(item)
+          if (item.children.length) {
+            res = res.concat(getChildrenVNOdes(item))
+          }
+        })
+      }
+      return res
+    }
+    let directiveOriginalChildrenVNodes = []
+    let directiveGenerateChildrenVNodes = []
     let directives = this.directives
     vnodes.forEach(vnode => {
       if (vnode.name.substring(0, 1) === '@') {
@@ -101,11 +116,17 @@ export default class VirtualDOM {
           let parentChildren = vnode.parent ? vnode.parent.children : vnodes
           let i = parentChildren.indexOf(vnode)
           parentChildren.splice(i, 1, ...childNodes)
+
+          directiveOriginalChildrenVNodes = directiveOriginalChildrenVNodes.concat(getChildrenVNOdes(vnode))
+          directiveGenerateChildrenVNodes = directiveGenerateChildrenVNodes.concat(getChildrenVNOdes({ children: childNodes }))
         }
+        vnode._directive = true
       }
     })
+    directiveOriginalChildrenVNodes.forEach(vnode => vnode._directive = true)
+    directiveGenerateChildrenVNodes.forEach(vnode => vnodes.push(vnode))
 
-    this.vnodes = vnodes
+    this.vnodes = vnodes.filter(vnode => !vnode._directive)
 
     let roots = vnodes.filter(item => !item.parent)
     return roots
@@ -118,24 +139,11 @@ export default class VirtualDOM {
       return
     }
 
-    function isNode(o) {
-      return (
-        typeof Node === "object" ? o instanceof Node : 
-          o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
-      )
-    }
-
-    function isElement(o) {
-      return (
-        typeof HTMLElement === "object" ? o instanceof HTMLElement :
-          o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
-      )
-    }
-
     let selector = this.selector
     let vtree = this.createDOM()
     let container = (isNode(selector) || isElement(selector)) ? selector : document.querySelector(selector)
-
+    
+    this.container = container
     container.innerHTML = ''
     vtree.forEach(item => container.appendChild(item))
   }
@@ -154,9 +162,9 @@ export default class VirtualDOM {
     this.$$transaction = setTimeout(() => {
       let lastVtree = this.vtree
       let newVtree = this.createVirtualDOM()
+
       let patches = diff(lastVtree, newVtree, null)
-  
-      patch(patches, lastVtree[0].$element.parentNode)
+      patch(patches, this.vtree, this.container) // this.vtree will be updated
 
       this.$$transactionResolves.forEach(resolve => resolve())
       this.$$transactionResolves = []
@@ -172,8 +180,8 @@ export default class VirtualDOM {
     })
     this.vnodes.forEach(vnode => {
       let el = vnode.$element
-      vnode.$element = null
       el.$vnode = null
+      vnode.$element = null
     })
     roots.forEach(el => {
       el.parentNode.removeChild(el)
