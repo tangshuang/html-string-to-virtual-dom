@@ -119,9 +119,23 @@ export default class VirtualDOM {
       return
     }
 
+    function isNode(o) {
+      return (
+        typeof Node === "object" ? o instanceof Node : 
+          o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
+      )
+    }
+
+    function isElement(o) {
+      return (
+        typeof HTMLElement === "object" ? o instanceof HTMLElement :
+          o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
+      )
+    }
+
     let selector = this.selector
     let elements = this.createDOM()
-    let container = document.querySelector(selector)
+    let container = (isNode(selector) || isElement(selector)) ? selector : document.querySelector(selector)
 
     container.innerHTML = ''
     elements.forEach(item => container.appendChild(item))
