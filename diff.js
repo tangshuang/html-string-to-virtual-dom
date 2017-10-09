@@ -1,3 +1,5 @@
+import foreach from './utils/foreach'
+
 export default function diff(oldNodes, newNodes, parentVNode) {
   let oldIdentifies = oldNodes.map(vnode => identify(vnode))
   let newIdentifies = newNodes.map(vnode => identify(vnode))
@@ -78,7 +80,7 @@ function identify(vnode) {
   if (vnode.attrs.key) {
     return vnode.name + ':' + vnode.attrs.key
   }
-  return vnode.name + ':' + Object.keys(vnode.attrs).join(',') + '|' + !!vnode.text
+  return vnode.name + ':' + Object.keys(vnode.attrs).join(',')
 }
 
 function diffSameNodes(oldNode, newNode, parentVNode) {
@@ -107,20 +109,17 @@ function diffAttributes(oldNode, newNode) {
   let oldAttrs = oldNode.attrs
   let newAttrs = newNode.attrs
 
-  let keys = Object.keys(newAttrs)
-  if (keys.length) {
-    keys.forEach(key => {
-      let oldValue = oldAttrs[key]
-      let newVaule = newAttrs[key]
+  foreach(newAttrs, key => {
+    let oldValue = oldAttrs[key]
+    let newVaule = newAttrs[key]
 
-      if (oldValue !== newVaule) {
-        patches.push({
-          key,
-          value: newVaule,
-        })
-      }
-    })
-  }
+    if (oldValue !== newVaule) {
+      patches.push({
+        key,
+        value: newVaule,
+      })
+    }
+  })
 
   return patches
 }

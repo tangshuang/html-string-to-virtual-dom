@@ -13,7 +13,7 @@ Or use in browser directly:
 ```
 <script src="dist/VirtualDOM.js"></script>
 <script>
-window['VirtualDOM'] = window['VirtualDOM']['default']
+window['VirtualDOM'] = window['HSTVirtualDOM']['default'] // notice 'HSTVirtualDOM'
 </script>
 ```
 
@@ -200,30 +200,44 @@ An array. The VNodes Tree (which is the same structure as DOM structure) of this
 
 Flat structure VNodes list. All VNodes are in this array. You can use `filter` method to pick out what you want.
 
-### createVirtualDOM()
-
-When a vdom instance created, you may just want to get its vtree, not render to document, use `createVirtualDOM`:
-
-```
-var vdom = new VirtualDOM({
-  template: '<div class="my-box"></div>'
-})
-var vtree = vdom.createVirtualDOM()
-```
-
-This is useful when you define a directive.
-
 ### render()
 
 When a vdom instance created, it will not render to the true DOM until you call render method.
+
+NOTICE: you should not call render method again until you call destroy.
 
 ### update(data)
 
 Use new data to update view. The `data` will be merged into old data.
 
+NOTICE: you should not call update method before you call render.
+
 ### destroy()
 
 Destroy the mounted VNodes. And then you can reuse `render` method to render again before you destroy this instance.
+
+### createDOM()
+
+After you initailize the class, you get the instance. If you do not want to render it immediately, and want to get vtree, you can call `this.vtree`. If you want to create elements manually, you can call `createDOM` methods:
+
+```
+let vdom = new VirtualDOM({ ... })
+// not call vdom.render()
+let elements = vdom.createDOM()
+
+elements.forEach(element => {
+  document.querySelector('#app').appendChild(element)
+})
+```
+
+**NOTICE**: when you destroy the real DOM elements, you should set `elements` to be null, like:
+
+```
+vdom.destroy()
+elements = null
+```
+
+If you do not do as this, these DOM elements will stay in memory.
 
 ## Development
 

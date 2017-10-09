@@ -1,6 +1,6 @@
 {
   "name": "hst-virtual-dom",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "HTML string template based Virtual DOM library",
   "main": "dist/VirtualDOM.js",
   "scripts": {

@@ -2,9 +2,9 @@
 
 <div id="app"></div>
 
-<script src="./dist/VirtualDOM.js"></script>
+<script src="./dist/HSTVirtualDOM.js"></script>
 <script>
-window.VirtualDOM = window.VirtualDOM['default']
+window.VirtualDOM = window.HSTVirtualDOM['default']
 let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
@@ -98,4 +98,17 @@ let vdom = new VirtualDOM({
   selector: document.querySelector('#app'),
 })
 vdom.render()
+
+
+let vdom2 = new VirtualDOM({
+  template: `
+    <div>
+      my name is ok
+      <span>go</span>
+      not ok
+    </div>
+  `,
+  selector: '#app',
+})
+console.log(vdom2.vtree)
 </script>

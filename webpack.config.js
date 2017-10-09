@@ -1,6 +1,6 @@
 module.exports = {
   entry: {
-    VirtualDOM: './VirtualDOM.js',
+    HSTVirtualDOM: './HSTVirtualDOM.js',
   },
   output: {
     path: __dirname + '/dist',

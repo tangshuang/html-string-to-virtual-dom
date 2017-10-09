@@ -1,3 +1,5 @@
+import foreach from './utils/foreach'
+
 export default function createElement(vnode) {
   let name = vnode.name
   let el = document.createElement(name)
@@ -5,22 +7,9 @@ export default function createElement(vnode) {
   // let props = vnode.props = vnode.props || {}
   let events = vnode.events
 
-  let attrKeys = Object.keys(attrs)
-  if (attrKeys && attrKeys.length) {
-    attrKeys.forEach(key => {
-      let value = attrs[key]
-      el.setAttribute(key, value)
-    })
-  }
+  foreach(attrs, (key, value) => el.setAttribute(key, value))
 
-  // let propKeys = Object.keys(props)
-  // if (propKeys && propKeys.length) {
-  //   propKeys.forEach(prop => {
-  //     let value = props[prop]
-  //     el[prop] = value
-  //   })
-  // }
-
+  // foreach(props, (key, value) => el[key] = value)
   // if (name === 'input') {
   //   if (attrs.type === 'checkbox' || attrs.type === 'radio') {
   //     el.addEventListener('change', e => props.checked = e.target.checked, false)
@@ -33,23 +22,18 @@ export default function createElement(vnode) {
   //   el.addEventListener('change', e => props.value = e.target.value, false)
   // }
 
-  let eventKeys = events ? Object.keys(events) : []
-  if (eventKeys && eventKeys.length) {
-    eventKeys.forEach(key => {
-      let callback = events[key]
-      el.addEventListener(key, callback, false)
-    })
-  }
-
-  if (vnode.text) {
-    el.innerText = vnode.text
-    vnode.$element = el
-    el.$vnode = vnode
-    return el
-  }
+  foreach(events, (event, callback) => {
+    el.addEventListener(event, callback, false)
+  })
 
   if (vnode.children && vnode.children.length) {
     vnode.children.forEach(child => {
+      if (typeof child === 'string') {
+        let textNode = document.createTextNode(child)
+        el.appendChild(textNode)
+        return
+      }
+
       let childEl = createElement(child)
       el.appendChild(childEl)
       child.$element = childEl

@@ -1,7 +1,13 @@
 export default function foreach(obj, callback) {
+  if (typeof obj !== 'object') {
+    return
+  }
   let keys = Object.keys(obj)
-  keys.forEach(key => {
+  for (let key of keys) {
     let value = obj[key]
-    callback(key, value)
-  })
+    let state = callback(key, value, obj)
+    if (state === false) {
+      break
+    }
+  }
 }
