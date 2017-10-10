@@ -1,12 +1,10 @@
 module.exports = {
-  entry: {
-    HSTVirtualDOM: './HSTVirtualDOM.js',
-  },
+  entry: './VirtualDOM.js',
   output: {
     path: __dirname + '/dist',
-    filename: '[name].js',
+    filename: 'VirtualDOM.browser.js',
     libraryTarget: 'umd',
-    library: '[name]',
+    library: 'HSTVirtualDOM',
   },
   module: {
     loaders: [

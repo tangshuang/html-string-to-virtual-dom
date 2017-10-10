@@ -7,103 +7,197 @@ import merge from './utils/merge'
 import defaultDirectives from './directives'
 import interpose from './utils/interpose'
 import { isNode, isElement } from './utils/isDOM'
-import recursiveChildren from './utils/recursiveChildren'
+import recursive from './utils/recursive'
+import hashCode from './utils/hashCode'
 
-export default class HSTVirtualDOM {
-  constructor({ template, data = {}, events = {}, directives = {}, selector }) {
+export default class VirtualDOM {
+  constructor({ template, data = {}, methods = {}, directives = {}, selector }) {
     this.template = template
     this.data = data
-    this.events = events
+    this.methods = methods
     this.directives = merge(defaultDirectives, directives)
     this.selector = selector
     this.createVirtualDOM()
   }
   createVirtualDOM() {
-    let template = this.template
-    let data = this.data
-    let directives = this.directives
+    let { template, data, methods, directives } = this
 
-    // replace interpolations with visible data
-    // only string and number data will be treated as interpolations' value
-    foreach(data, (key, value) => {
-      if (typeof value === 'string' || typeof value === 'number') {
-        template = interpose(template, key, value)
-      }
-    })
+    // create an array to save parsed nodes
+    let nodes = []
+    // create an array to record node's depth
+    let depth = []
 
-    // create vnodes:
-    // 1. make a createVNode function to create a virtual node
-    // 2. use string text as textNode in children, textNode in 
-    // top level vnodes is not allow which will be ignored
-    let vnodes = []
-    let recordDepth = []
-    let createVNode = (name, attrs = {}) => {
-      let vnode = {
-        name,
-        attrs,
-        id: attrs.id ? attrs.id : '',
-        class: attrs.class ? attrs.class.split(' ') : [],
-        children: [],
-        events: {},
-      }
+    // let createVNode = (name, attrs = {}) => {
+    //   let vnode = {
+    //     name,
+    //     attrs,
+    //     children: [],
+    //     parent: null,
+    //   }
 
-      // transfer `on` beginning attribute to be an event binder
-      // and delete it from original attributes
-      foreach(attrs, (key, value) => {
-        if (key.indexOf('on') === 0 && value.substring(0, 3) == '{{:' && value.substring(value.length - 2) == '}}') {
-          let eventName = key.substring(2).toLowerCase()
-          let eventCallbackName = value.substring(3, value.length - 2)
+    //   // // transfer `on` beginning attribute to be an event binder
+    //   // // and delete it from original attributes
+    //   // foreach(attrs, (key, value) => {
+    //   //   if (key.indexOf('on') === 0 && value.substring(0, 3) == '{{:' && value.substring(value.length - 2) == '}}') {
+    //   //     let eventName = key.substring(2).toLowerCase()
+    //   //     let eventCallbackName = value.substring(3, value.length - 2)
 
-          if (this.events[eventCallbackName]) {
-            vnode.events[eventName] = this.events[eventCallbackName].bind(this)
-          }
+    //   //     if (this.events[eventCallbackName]) {
+    //   //       vnode.events[eventName] = this.events[eventCallbackName].bind(this)
+    //   //     }
 
-          // this attribute will be deleted from original attributes
-          delete attrs[key]
-        }
-      })
+    //   //     // this attribute will be deleted from original attributes
+    //   //     delete attrs[key]
+    //   //   }
+    //   // })
 
-      return vnode
-    }
+    //   return vnode
+    // }
     let parser = new Parser({
       onopentag(name, attrs) {
-        let vnode = createVNode(name, attrs)
+        let node = {
+          name,
+          attrs,
+          children: [],
+          parent: null,
+        }
 
         // record whether this tag is in a directive
-        if (vnode.name.substring(0, 1) === ':') {
-          vnode._directive = true
+        if (directives[name]) {
+          node._isDirective = true
         }
 
         // find out current vnode's parent
-        let parent = recordDepth.length ? recordDepth[recordDepth.length - 1] : null
+        let parent = depth.length ? depth[depth.length - 1] : null
         if (parent) {
-          vnode.parent = parent
-          parent.children.push(vnode)
+          node.parent = parent
+          parent.children.push(node)
           // if its parent is a directive/directive child, it should be added a tag
           // vnodes which has _directive prop will be removed from original vnodes list
-          if (parent._directive) {
-            vnode._directive = true
+          if (parent._isDirective || parent._isDirectiveChild) {
+            node._isDirectiveChild = true
           }
         }
 
-        recordDepth.push(vnode)
-        vnodes.push(vnode)
+        depth.push(node)
+        nodes.push(node)
       },
       onclosetag(name) {
-        recordDepth.pop()
+        depth.pop()
       },
       ontext(text) {
         // find out which vnode this text are in
-        let vnode = recordDepth[recordDepth.length - 1]
-        if (vnode) {
-          vnode.children.push(text.replace(/\s+/g, ' '))
+        let parent = depth.length ? depth[depth.length - 1] : null
+        let node = {
+          text: text.replace(/\s+/g, ' ')
+        }
+
+        if (parent) {
+          parent.children.push(node)
+          if (parent._isDirective || parent._isDirectiveChild) {
+            node._isDirectiveChild = true
+          }
+        }
+        else {
+          nodes.push(node)
         }
       },
     })
 
     parser.parseChunk(template)
     parser.done()
-    recordDepth = null
+
+    // remove directive children
+    nodes = nodes.filter(node => !(!node._isDirective && node._isDirectiveChild))
+
+    // calculate every node's hash code
+    nodes.forEach(node => {
+      let hashsrc = ''
+      if (node.text) {
+        hashsrc = ':' + node.text
+      }
+      else {
+        hashsrc += node.name + ':'
+        hashsrc += JSON.stringify(node.attrs)
+      }
+      node.hashCode = hashCode(hashsrc)
+    })
+
+    // now we have get all original nodes which do not contain directive children,
+    // next we need to build a virtual dom tree which has same structure with template html
+
+    // find out top level nodes, because of their .children prop, we get a tree,
+    // even contains all directive children
+    let tree = nodes.filter(node => !node.parent)
+
+    // recursive the tree to replace interpolations
+    let vnodes = []
+    let vtree = []
+    recursive(tree, 'children', (child, parent) => {
+      let { attrs, text } = child
+
+      // replace interpolations which can use expression width data, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
+      let keys = []
+      let values = []
+      foreach(data, (key, value) => {
+        keys.push(key)
+        values.push(value)
+      })
+
+      // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
+      // the expression result should be a function if you want to bind it to events
+      let funcs = []
+      let callbacks = []
+      foreach(methods, (func, callback) => {
+        funcs.push(func)
+        callbacks.push(callback.bind(this))
+      })
+
+      // interpose text
+      child.text = interpose(text, keys, values)
+      foreach(attrs, (k, v) => {
+        // interpose attrs
+        attrs[k] = interpose(v, keys, values)
+        
+        // data interposing come first, after data interposing
+        // when the first letter of expression is ':', 
+        // it will use certain method to operate,
+        // i.e. {{ : a + b }}, 'a' and 'b' is from methods not data
+        let expression = v.trim()
+        if (expression.substring(0, 1) === ':') {
+          let operation = expression.substring(1, expression.length - 1).trim()
+          let callback = Function(...funcs, 'return ' + operation)(...callbacks)
+
+          // bind events
+          if (k.indexOf('on') === 0) {
+            let event = k.substring(2).toLowerCase()
+            vnode.events[event] = callback
+            // this attribute will be deleted from original attributes
+            delete attrs[k]
+          }
+          // normal value
+          else {
+            attrs[k] = callback
+          }
+        }
+        
+      })
+      child.id = attrs.id || ''
+      child.class = attrs.class ? attrs.class.split(' ') : []
+      
+      // TODO: deal with directive
+
+      // delete no use prop
+      delete child._isDirective
+      delete child._isDirectiveChild
+
+      vnodes.push(child)
+    })
+
+
+
+
+
 
     // deal with directives,
     // a directive tag begins with `:`, like: <:name></:name>
