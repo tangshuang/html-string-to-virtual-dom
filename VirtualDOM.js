@@ -2,9 +2,9 @@ import { Parser } from 'htmlparser2'
 import createElement from './createElement'
 import diff from './diff'
 import patch from './patch'
+import * as defaultDirectives from './directives'
 import foreach from './utils/foreach'
 import merge from './utils/merge'
-import defaultDirectives from './directives'
 import interpose from './utils/interpose'
 import { isNode, isElement } from './utils/isDOM'
 import recursive from './utils/recursive'
@@ -12,7 +12,7 @@ import hashCode from './utils/hashCode'
 
 export default class VirtualDOM {
   constructor({ template, data = {}, methods = {}, directives = {}, selector }) {
-    this.template = template
+    this.template = template.trim()
     this.data = data
     this.methods = methods
     this.directives = merge(defaultDirectives, directives)
@@ -27,32 +27,7 @@ export default class VirtualDOM {
     // create an array to record node's depth
     let depth = []
 
-    // let createVNode = (name, attrs = {}) => {
-    //   let vnode = {
-    //     name,
-    //     attrs,
-    //     children: [],
-    //     parent: null,
-    //   }
-
-    //   // // transfer `on` beginning attribute to be an event binder
-    //   // // and delete it from original attributes
-    //   // foreach(attrs, (key, value) => {
-    //   //   if (key.indexOf('on') === 0 && value.substring(0, 3) == '{{:' && value.substring(value.length - 2) == '}}') {
-    //   //     let eventName = key.substring(2).toLowerCase()
-    //   //     let eventCallbackName = value.substring(3, value.length - 2)
-
-    //   //     if (this.events[eventCallbackName]) {
-    //   //       vnode.events[eventName] = this.events[eventCallbackName].bind(this)
-    //   //     }
-
-    //   //     // this attribute will be deleted from original attributes
-    //   //     delete attrs[key]
-    //   //   }
-    //   // })
-
-    //   return vnode
-    // }
+    // begin to parse template
     let parser = new Parser({
       onopentag(name, attrs) {
         let node = {
@@ -86,6 +61,9 @@ export default class VirtualDOM {
         depth.pop()
       },
       ontext(text) {
+        if (!text.trim()) {
+          return
+        }
         // find out which vnode this text are in
         let parent = depth.length ? depth[depth.length - 1] : null
         let node = {
@@ -93,22 +71,18 @@ export default class VirtualDOM {
         }
 
         if (parent) {
+          node.parent = parent
           parent.children.push(node)
           if (parent._isDirective || parent._isDirectiveChild) {
             node._isDirectiveChild = true
           }
         }
-        else {
-          nodes.push(node)
-        }
+
+        nodes.push(node)
       },
     })
-
     parser.parseChunk(template)
     parser.done()
-
-    // remove directive children
-    nodes = nodes.filter(node => !(!node._isDirective && node._isDirectiveChild))
 
     // calculate every node's hash code
     nodes.forEach(node => {
@@ -120,7 +94,7 @@ export default class VirtualDOM {
         hashsrc += node.name + ':'
         hashsrc += JSON.stringify(node.attrs)
       }
-      node.hashCode = hashCode(hashsrc)
+      node._hash = hashCode(hashsrc)
     })
 
     // now we have get all original nodes which do not contain directive children,
@@ -132,9 +106,8 @@ export default class VirtualDOM {
 
     // recursive the tree to replace interpolations
     let vnodes = []
-    let vtree = []
-    recursive(tree, 'children', (child, parent) => {
-      let { attrs, text } = child
+    recursive({ children: tree }, 'children', (child, parent) => {
+      let { attrs, text, name } = child
 
       // replace interpolations which can use expression width data, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
       let keys = []
@@ -146,6 +119,7 @@ export default class VirtualDOM {
 
       // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
       // the expression result should be a function if you want to bind it to events
+      // NOTICE: data property names and methods property names should be unique
       let funcs = []
       let callbacks = []
       foreach(methods, (func, callback) => {
@@ -154,90 +128,89 @@ export default class VirtualDOM {
       })
 
       // interpose text
-      child.text = interpose(text, keys, values)
-      foreach(attrs, (k, v) => {
-        // interpose attrs
-        attrs[k] = interpose(v, keys, values)
-        
-        // data interposing come first, after data interposing
-        // when the first letter of expression is ':', 
-        // it will use certain method to operate,
-        // i.e. {{ : a + b }}, 'a' and 'b' is from methods not data
-        let expression = v.trim()
-        if (expression.substring(0, 1) === ':') {
-          let operation = expression.substring(1, expression.length - 1).trim()
-          let callback = Function(...funcs, 'return ' + operation)(...callbacks)
-
+      if (text) {
+        child.text = interpose(text, keys, values) // interpose width data
+        child.text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and data
+      }
+      // interpose attrs
+      else {
+        foreach(attrs, (k, v) => {
+          attrs[k] = interpose(v, keys, values)
+          attrs[k] = interpose(v, keys.concat(funcs), values.concat(callbacks), '{{:')
+  
           // bind events
           if (k.indexOf('on') === 0) {
             let event = k.substring(2).toLowerCase()
-            vnode.events[event] = callback
+            vnode.events[event] = typeof attrs[k] === 'function' ? attrs[k] : Function(attrs[k])
             // this attribute will be deleted from original attributes
             delete attrs[k]
           }
-          // normal value
-          else {
-            attrs[k] = callback
-          }
-        }
-        
-      })
-      child.id = attrs.id || ''
-      child.class = attrs.class ? attrs.class.split(' ') : []
-      
-      // TODO: deal with directive
-
-      // delete no use prop
-      delete child._isDirective
-      delete child._isDirectiveChild
+        })
+  
+        // generator id and class props, we can not generator them before value has been generatored
+        child.id = attrs.id || ''
+        child.class = attrs.class ? attrs.class.split(' ') : []
+      }
 
       vnodes.push(child)
     })
-
-
-
-
-
-
-    // deal with directives,
-    // a directive tag begins with `:`, like: <:name></:name>
-    vnodes.forEach((vnode, i) => {
-      if (vnode.name.substring(0, 1) === ':') {
-        let directiveName = vnode.name.substring(1)
-        if (typeof directives[directiveName] === 'function') {
-          let childNodes = directives[directiveName].call(vnode) || []
-          
-          if (vnode.parent) {
-            // find out this directive's borthers
-            let parent = vnode.parent
-            let borthers = parent.children
-            // replace original directive tag with childNodes in parent.children array
-            let i = borthers.indexOf(vnode)
-            borthers.splice(i, 1, ...childNodes)
-          }
-          // get all new vnodes, and put them into original vnodes list
-          recursiveChildren({ children: childNodes }, (i, vitem, vparent) => {
-            // delete _dirctive prop for these new vnodes, so that them will not be removed
-            delete vitem._directive 
-            vnodes.push(vitem)
-          })
-          // NOTICE: when this action finished, vnodes array's length increase, forEach
-          // will continue the loop from the first new childNode, and if a childNode 
-          // is a directive two, the same replace action will be done, so you do not need to
-          // be worried about nest directives
-        }
-      }
-    })
     
-    // all directive nodes/children of directive will be removed from original vnodes list
-    vnodes = vnodes.filter(vnode => !vnode._directive)
+    // create vtree
+    let vtree = vnodes.filter(item => !item.parent)
+
+    // find out top level directives, and recursive them to generator new vnodes
+    let vdirectives = vnodes.filter(item => item._isDirective && !item._isDirectiveChild)
+
+    // delete directive relative nodes from vnodes list,
+    // in directive function, new nodes will be put into vnodes list, so do not be worried about this
+    vnodes = vnodes.filter(item => !item._isDirective && !item._isDirectiveChild)
+
+    function directiveProcessor(vnode, definitions, vnodes, vtree, context) {
+      let { name, attrs, children, events, parent } = vnode
+      let definition = definitions[name]
+    
+      // .parent prop should be delete before clone (if you want to clone), 
+      // or parent will be cloned, which may cause memory out
+      children.forEach(item => delete item.parent)
+    
+      let childNodes = definition.call(context, { attrs, children, events }) || children
+      childNodes.forEach(item => parent ? item.parent = parent : null)
+    
+      // use new nodes to replace current directive
+      let borthers = parent ? parent.children : vtree
+      let i = borthers.indexOf(vnode)
+      borthers.splice(i, 1, ...childNodes)
+    
+      // deal with child directives
+      // delete _isDirective and _isDirectiveChild
+      childNodes.forEach(item => {
+        recursive(item, 'children', child => {
+          if (child._isDirective) {
+            directiveProcessor(child, definitions, vnodes, vtree, context)
+          }
+    
+          delete child._isDirective
+          delete child._isDirectiveChild
+          vnodes.push(child)
+        })
+    
+        delete item._isDirective
+        delete item._isDirectiveChild
+        vnodes.push(item)
+      })
+    }
+    vdirectives.forEach(vnode => {
+      // in directive function, new vnodes are created and replace the directive node in its borthers list,
+      // and _isDirective and _isDirectiveChild are deleted
+      directiveProcessor(vnode, directives, vnodes, vtree, this)
+    })
 
     this.vnodes = vnodes
-    this.vtree = vnodes.filter(item => !item.parent)
-    this.status = 0
+    this.vtree = vtree
 
-    return this.vtree
+    return vtree
   }
+
   createDOM() {
     let elements = this.vtree.map(item => createElement(item))
     this.status = 1
@@ -309,12 +282,12 @@ export default class VirtualDOM {
 
     let rootElements = []
     this.vtree.forEach(vnode => {
-      rootElements.push(vnode.$element)
+      rootElements.push(vnode.$dom)
     })
     this.vnodes.forEach(vnode => {
-      let el = vnode.$element
+      let el = vnode.$dom
       el.$vnode = null
-      vnode.$element = null
+      vnode.$dom = null
     })
     rootElements.forEach(el => {
       // If DOM is created but not mounted to document (status = 1),

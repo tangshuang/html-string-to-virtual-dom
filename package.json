@@ -2,7 +2,7 @@
   "name": "hst-virtual-dom",
   "version": "0.2.8",
   "description": "HTML string template based Virtual DOM library",
-  "main": "VirtualDOM.js",
+  "main": "dist/VirtualDOM.js",
   "scripts": {
     "build": "webpack"
   },
@@ -10,7 +10,8 @@
     "Virtual DOM"
   ],
   "dependencies": {
-    "htmlparser2": "^3.9.2"
+    "htmlparser2": "^3.9.2",
+    "webpack-bufferify": "0.0.5"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
