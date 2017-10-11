@@ -7,7 +7,12 @@ export default function(str, keys, values, before = '{{', after = '}}') {
     let end = after.replace(/\}/g, '\\}').replace(/\]/g, '\\]')
     let reg = new RegExp(begin + '(.*?)' + end, 'g')
     str = str.replace(reg, (match, expression) => {
-        return Function(...keys, 'return ' + expression)(...values)
+        let res = match
+        try {
+          res = Function(...keys, 'return ' + expression)(...values)
+        }
+        catch(e) {}
+        return res
     })
   }
   return str
