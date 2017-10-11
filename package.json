@@ -11,6 +11,7 @@
   ],
   "dependencies": {
     "htmlparser2": "^3.9.2",
+    "lodash": "^4.17.4",
     "webpack-bufferify": "0.0.5"
   },
   "devDependencies": {

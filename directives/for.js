@@ -4,21 +4,21 @@ import recursive from '../utils/recursive'
 import interpose from '../utils/interpose'
 
 export default function({ attrs, children }) {
-  let { data, key, value } = attrs
+  let { start, end, current } = attrs
   let vtree = []
-  foreach(data, (dataKey, dataValue) => {
+  for (let i = parseInt(start); i <= parseInt(end); i ++) {
     let childNodes = cloneDeep(children)
     recursive({ children: childNodes }, 'children', child => {
-      let { attrs, text } = child
+      let { attrs, text, name } = child
   
       // interpose text
       if (text) {
-        child.text = interpose(text, [key, value], [dataKey, dataValue])
+        child.text = interpose(text, [current], [i])
       }
       // interpose attrs
       else {
-        foreach(attrs, (attrName, attrValue) => {
-          attrs[attrName] = interpose(attrValue, [key, value], [dataKey, dataValue])
+        foreach(attrs, (k, v) => {
+          attrs[k] = interpose(v, [current], [i])
         })
   
         // generator id and class props, we can not generator them before value has been generatored
@@ -27,6 +27,6 @@ export default function({ attrs, children }) {
       }
     })
     vtree = vtree.concat(childNodes)
-  })
+  }
   return vtree
 }

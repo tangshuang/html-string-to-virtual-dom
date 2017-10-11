@@ -67,7 +67,8 @@ export default class VirtualDOM {
         // find out which vnode this text are in
         let parent = depth.length ? depth[depth.length - 1] : null
         let node = {
-          text: text.replace(/\s+/g, ' ')
+          text: text.replace(/\s+/g, ' '),
+          parent,
         }
 
         if (parent) {
@@ -80,6 +81,10 @@ export default class VirtualDOM {
 
         nodes.push(node)
       },
+    }, { 
+      recognizeSelfClosing: true,
+      lowerCaseTags: false,
+      lowerCaseAttributeNames: false,
     })
     parser.parseChunk(template)
     parser.done()
@@ -104,44 +109,46 @@ export default class VirtualDOM {
     // even contains all directive children
     let tree = nodes.filter(node => !node.parent)
 
+    // replace interpolations which can use expression width data, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
+    let keys = []
+    let values = []
+    foreach(data, (key, value) => {
+      keys.push(key)
+      values.push(value)
+    })
+
+    // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
+    // the expression result should be a function if you want to bind it to events
+    // NOTICE: data property names and methods property names should be unique
+    let funcs = []
+    let callbacks = []
+    foreach(methods, (func, callback) => {
+      funcs.push(func)
+      callbacks.push(callback.bind(this))
+    })
+
     // recursive the tree to replace interpolations
     let vnodes = []
     recursive({ children: tree }, 'children', (child, parent) => {
       let { attrs, text, name } = child
 
-      // replace interpolations which can use expression width data, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
-      let keys = []
-      let values = []
-      foreach(data, (key, value) => {
-        keys.push(key)
-        values.push(value)
-      })
-
-      // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
-      // the expression result should be a function if you want to bind it to events
-      // NOTICE: data property names and methods property names should be unique
-      let funcs = []
-      let callbacks = []
-      foreach(methods, (func, callback) => {
-        funcs.push(func)
-        callbacks.push(callback.bind(this))
-      })
-
       // interpose text
-      if (text) {
-        child.text = interpose(text, keys, values) // interpose width data
-        child.text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and data
+      if (text !== undefined) {
+        text = interpose(text, keys, values) // interpose width data
+        text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and data
+        child.text = text
       }
       // interpose attrs
       else {
         foreach(attrs, (k, v) => {
-          attrs[k] = interpose(v, keys, values)
-          attrs[k] = interpose(v, keys.concat(funcs), values.concat(callbacks), '{{:')
+          v = interpose(v, keys, values)
+          v = interpose(v, keys.concat(funcs), values.concat(callbacks), '{{:')
+          attrs[k] = v
   
           // bind events
-          if (k.indexOf('on') === 0) {
+          if (k.indexOf('on') === 0 && typeof attrs[k] === 'function') {
             let event = k.substring(2).toLowerCase()
-            vnode.events[event] = typeof attrs[k] === 'function' ? attrs[k] : Function(attrs[k])
+            child.events[event] =  attrs[k]
             // this attribute will be deleted from original attributes
             delete attrs[k]
           }
@@ -189,13 +196,13 @@ export default class VirtualDOM {
             directiveProcessor(child, definitions, vnodes, vtree, context)
           }
     
-          delete child._isDirective
-          delete child._isDirectiveChild
+          // delete child._isDirective
+          // delete child._isDirectiveChild
           vnodes.push(child)
         })
     
-        delete item._isDirective
-        delete item._isDirectiveChild
+        // delete item._isDirective
+        // delete item._isDirectiveChild
         vnodes.push(item)
       })
     }
