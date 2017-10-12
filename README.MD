@@ -12,6 +12,10 @@ Or use in browser directly:
 
 ```
 <script src="dist/VirtualDOM.browser.js"></script>
+<script>
+window['createVirtualDOM'] = window['VirtualDOM']['createVirtualDOM'] // use this in directive defination function
+window['VirtualDOM'] = window['VirtualDOM']['default']
+</script>
 ```
 
 ## Usage
@@ -139,7 +143,7 @@ Use `{{:eventHandler}}` in template string, `eventHandler` is the property name 
 
 **What's a directive?**
 
-A directive is a angular-directive-like html tag in html string template with `@` at the beginning. For example, `<my-directive></my-directive>`.
+A directive is a angular-directive-like html tag in html string template. For example, `<my-directive></my-directive>`.
 
 **How to define a directive?**
 
@@ -148,7 +152,7 @@ You can define a directive in `options.directives`. For example:
 ```
 let vdom = new VirtualDOM({
   template: `
-    <@my-directive></@my-directive>
+    <my-directive></my-directive>
   `,
   directives: {
     'my-directive': function({ attrs, events, children }) {
@@ -197,7 +201,7 @@ With this code, it will print [1-10] numbers in screen.
 ### foreach
 
 ```
-<@foreach data="{{ items }}" key="i" value="v">
+<foreach data="{{ items }}" key="i" value="v">
   {{ i }} => {{ v }}
 </foreach>
 ```

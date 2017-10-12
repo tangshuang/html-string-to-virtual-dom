@@ -1,12 +1,12 @@
-const Bufferify = require('webpack-bufferify')
+// const Bufferify = require('webpack-bufferify')
 
-const WebpackPluginUseDefault = function() {}
-WebpackPluginUseDefault.prototype.apply = Bufferify.prototype.apply
-WebpackPluginUseDefault.prototype.process = function(content) {
-    return content + `
-window["VirtualDOM"] = window["VirtualDOM"]["default"];
-`
-}
+// const WebpackPluginUseDefault = function() {}
+// WebpackPluginUseDefault.prototype.apply = Bufferify.prototype.apply
+// WebpackPluginUseDefault.prototype.process = function(content) {
+//     return content + `
+// window["VirtualDOM"] = window["VirtualDOM"]["default"];
+// `
+// }
 
 const babelLoader = {
   test: /\.js$/,
@@ -31,7 +31,7 @@ module.exports = [
       ],
     },
     plugins: [
-      new WebpackPluginUseDefault(),
+      // new WebpackPluginUseDefault(),
     ],
   }, 
   {

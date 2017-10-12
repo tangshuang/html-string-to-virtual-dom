@@ -8,6 +8,8 @@ import foreach from './utils/foreach'
 import merge from './utils/merge'
 import { isNode, isElement } from './utils/isDOM'
 
+
+export { createVirtualDOM, createDOM, diff, patch }
 export default class VirtualDOM {
   constructor({ template, data = {}, methods = {}, directives = {}, selector }) {
     this.template = template.trim()

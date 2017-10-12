@@ -5,6 +5,8 @@
 
 <script src="./dist/VirtualDOM.browser.js"></script>
 <script>
+let { createVirtualDOM } = window.VirtualDOM
+window.VirtualDOM = window.VirtualDOM['default']
 let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
@@ -25,6 +27,9 @@ let vdom = new VirtualDOM({
         <p>this will be show.</p>
       </if>
       <p><a href="javascript:" onclick="{{:toggle}}">toggle</a> 1</p>
+      <my-directive onTrigger={{:trigger}}>
+        <div>dont click me</div>
+      </my-directive>
       <p>
         <a href="javascript:" onclick="{{:transact}}">transaction testing</a> 
         <span>{{transactext}}</span>
@@ -76,21 +81,21 @@ let vdom = new VirtualDOM({
     },
   },
   directives: {
-    // 'my-directive': function({ attrs, events, children }) {
-    //   let myVDOM = new VirtualDOM({
-    //     template: `
-    //       <div class="my-custom-directive" onclick={{:click}}></div>
-    //     `,
-    //     methods: {
-    //       click(e) {
-    //         events.trigger('dont click me!')
-    //       },
-    //     },
-    //   })
-    //   let vtree = myVDOM.createVirtualDOM()
-    //   vtree[0].children = children
-    //   return vtree
-    // },
+    'my-directive': function({ attrs, events, children }) {
+      let myVDOM = createVirtualDOM({
+        template: `
+          <div class="my-custom-directive" onclick={{:click}}></div>
+        `,
+        methods: {
+          click(e) {
+            events.trigger('dont click me!')
+          },
+        },
+      })
+      let { vtree } = myVDOM
+      vtree[0].children = children
+      return vtree
+    },
   },
   selector: document.querySelector('#app'),
 })

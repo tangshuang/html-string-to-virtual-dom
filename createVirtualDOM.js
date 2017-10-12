@@ -4,7 +4,7 @@ import interpose from './utils/interpose'
 import recursive from './utils/recursive'
 import hashCode from './utils/hashCode'
 
-export default function createVirtualDOM({ template, data, methods, directives }) {
+export default function createVirtualDOM({ template, data = {}, methods = {}, directives = {} }) {
   // create an array to save parsed nodes
   let nodes = []
   // create an array to record node's depth
