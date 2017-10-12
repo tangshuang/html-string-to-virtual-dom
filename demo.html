@@ -17,17 +17,14 @@ let vdom = new VirtualDOM({
         <option>touch to change</option>  
       </select></p>
       <ul>
-        <foreach target="cats" key="name" value="color">
+        <foreach data="{{cats}}" key="name" value="color">
           <li>{{name}}'s color is {{color}}</li>
         </foreach>
       </ul>
       <if condition="{{isShow}}">
         <p>this will be show.</p>
       </if>
-      <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
-      <my-directive ontrigger={{:trigger}}>
-        <span>this is my custom directive</span>
-      </my-directive>
+      <p><a href="javascript:" onclick="{{:toggle}}">toggle</a> 1</p>
       <p>
         <a href="javascript:" onclick="{{:transact}}">transaction testing</a> 
         <span>{{transactext}}</span>
@@ -79,26 +76,24 @@ let vdom = new VirtualDOM({
     },
   },
   directives: {
-    'my-directive': function({ attrs, events, children }) {
-      let myVDOM = new VirtualDOM({
-        template: `
-          <div class="my-custom-directive" onclick={{:click}}></div>
-        `,
-        methods: {
-          click(e) {
-            events.trigger('dont click me!')
-          },
-        },
-      })
-      let vtree = myVDOM.createVirtualDOM()
-      console.log(vtree, children)
-      vtree[0].children = children
-      return vtree
-    },
+    // 'my-directive': function({ attrs, events, children }) {
+    //   let myVDOM = new VirtualDOM({
+    //     template: `
+    //       <div class="my-custom-directive" onclick={{:click}}></div>
+    //     `,
+    //     methods: {
+    //       click(e) {
+    //         events.trigger('dont click me!')
+    //       },
+    //     },
+    //   })
+    //   let vtree = myVDOM.createVirtualDOM()
+    //   vtree[0].children = children
+    //   return vtree
+    // },
   },
   selector: document.querySelector('#app'),
 })
-vdom.render()
 
 // let vdom = new VirtualDOM({
 //   template: '<go></go>',

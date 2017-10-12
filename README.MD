@@ -11,17 +11,17 @@ npm install --save hst-virtual-dom
 Or use in browser directly:
 
 ```
-<script src="dist/VirtualDOM.js"></script>
-<script>
-window['VirtualDOM'] = window['HSTVirtualDOM']['default'] // notice 'HSTVirtualDOM'
-</script>
+<script src="dist/VirtualDOM.browser.js"></script>
 ```
 
 ## Usage
 
 
 ```
-import VirtualDOM from 'hst-virtual-dom'
+import VirtualDOM from 'hst-virtual-dom' 
+// using module, 
+// if you do not use browser mode, VirtualDOM class is visible on window
+
 let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
@@ -29,13 +29,13 @@ let vdom = new VirtualDOM({
       <p><a href="javascript:" onclick="{{:click}}">click me to refresh content</a></p>
       <p><input onkeyup="{{:input}}" value=""></p>
       <ul>
-        <@foreach target="cats" key="name" value="color">
+        <foreach data="{{cats}}" key="name" value="color">
           <li>{{name}}'s color is {{color}}</li>
-        </@foreach>
+        </foreach>
       </ul>
-      <@if condition="{{isShow}}">
+      <if condition="{{isShow}}">
         <p>this will be show.</p>
-      </@if>
+      </if>
       <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
     </div>
   `,
@@ -48,7 +48,7 @@ let vdom = new VirtualDOM({
     },
     isShow: true,
   },
-  events: {
+  method: {
     input(e) {
       e.target.value = 'xxx'
     },
@@ -67,7 +67,6 @@ let vdom = new VirtualDOM({
   },
   selector: '#app',
 })
-vdom.render()
 ```
 
 ## Options
@@ -76,39 +75,73 @@ When you use `new` to initialize a vdom, you should pass options:
 
 ### template
 
-HTML string template.
-
-#### Interpolation
-
-Use `{{value}}` in template string, `value` is the property name of `data`, the value should be string or number.
-
-#### Events Interpolation
-
-Use `{{:eventHandler}}` in template string, `eventHandler` is the property name of `events`, the value should be a function.
+HTML string template. Support interpolations.
 
 ### data
 
-`data` option is used to be rendered for interpolation. Only string and number data type can be used for a single interpolation. If a data item is object/array, it can only be used in `@foreach`.
+`data` option is used to be rendered for interpolation. Almost data types are supported, even object and array.
 
-### events
+```
+{
+  template: `<foreach data={{cats}} key="name" value="age">{{name}} {{age}}</foreach>`,
+  data: {
+    cats: { 
+      tom: 3,
+      lily: 5,
+    },
+  },
+}
+```
 
-Events callback functions. Used in `{{:}}` special interpolation.
+Here `cats` is an object which is passed into `foreach`'s `data` attribute.
+
+### methods
+
+Functions. Used in `{{:}}` special interpolations. 
+`this` in methods functions are point to the VirtualDOM instance.
 
 ### directives
 
-Directive defination functions. Key name is directive name. Read more in *Directives*.
+Directive defination functions. 
+`this` in directives defination functions are point to the VirtualDOM instance. 
+Read more in *Directives*.
 
 ### selector
 
-DOM element selector, the element which to mount to when call `render`.
+DOM element container, the element which vdom mounts to when render.
+
+
+## Interpolation
+
+Use `{{value}}` in template string, `value` is the property name of `data`, the value should be string or number.
+
+Simple JS expression is supported, i.e.
+
+```
+{{ a + 1 }}
+```
+
+But it is not recommended. We use `Function` which use `eval` to implement this, so there may be some security problem.
+
+Interpolation can only be used in textNode or tag attribute value. Tag name, JS complex expression are not supported. And to be more sample as React, you can do like this:
+
+```
+<a href={{link}} onClick={{:onClick}}>{{text}}</a>
+```
+
+Which has no space in interpolations.
+
+**Use `methods` interpolation:**
+
+Use `{{:eventHandler}}` in template string, `eventHandler` is the property name of `methods`, the value should be a function.
 
 ## Directives
 
-### What's a directive?
+**What's a directive?**
 
-A directive is a angular-directive-like html tag in html string template with `@` at the beginning. For example, `<@my-directive></@my-directive>`.
+A directive is a angular-directive-like html tag in html string template with `@` at the beginning. For example, `<my-directive></my-directive>`.
 
-### How to define a directive?
+**How to define a directive?**
 
 You can define a directive in `options.directives`. For example:
 
@@ -118,17 +151,18 @@ let vdom = new VirtualDOM({
     <@my-directive></@my-directive>
   `,
   directives: {
-    'my-directive': (attrs, events, children, context) => {
+    'my-directive': function({ attrs, events, children }) {
       // defination code...
-      // must return a vtree array
+      // must return a vtree
     },
   },
 })
 ```
 
-**defination function**
+##defination function
 
-What's a defination function? It is a function, which define the directive's behavior. It has four paramaters:
+Defination function is a function which define the directive's behavior. 
+It has 3 options:
 
 *attrs*
 
@@ -142,51 +176,51 @@ Directive's events functions in html string template. Yes, it supports events at
 
 Directive's children vtree, sub tags in html string template.
 
-*context*
-
-`this` of current VirtualDOM instance.
-
 *@return*
 
-The function must return an array which is made up with vtree. `children` are vtree. If you want to add new vtree, you can use another VirtualDOM instance to implement. Look into `demo.html`.
+The function must return an array which is made up with vtree. `children` are vtree. 
+If you want to add new vtree, you can use another VirtualDOM instance to implement. 
+Look into `/directives/if.js` for an example.
 
-### Default Directives
+## default directives
 
-Now we have two default directives, `foreach` and `if`.
+Now we have 3 default directives, `for` `foreach` and `if`.
 
-#### @foreach
-
-I create a new tag whose name is `@foreach`, like:
-
-```
-<@foreach target="myObj" key="i" value="v">...</@foreach>
-```
-
-**target**
-
-The property name of `data`. The property value can be array or object. If array key will be index, if object key will be property name.
-
-**key**
-
-The interpolation name inner. As you know, `Array.forEach((v, i) => {})`, `i` and `v` is dynamic values, you can use `{{i}}` and `{{v}}` in the tag.
-
-**value**
-
-The same usage with `key`, stands for value.
-
-#### @if
-
-`@if` tag is a special tag which control the content to be show in dom.
+### for
 
 ```
-<@if condition="1 < 2">
+<for start="1" end="10" current="i">{{ i }}</for>
+```
+
+With this code, it will print [1-10] numbers in screen.
+
+### foreach
+
+```
+<@foreach data="{{ items }}" key="i" value="v">
+  {{ i }} => {{ v }}
+</foreach>
+```
+
+`items` is a property of `data`. It can be an array or an object.
+
+### if...else
+
+```
+<if condition="{{ a < b }}">
   <span>show</span>
-</@if>
+<else />
+  <span>hide</span>
+</if>
 ```
 
-**condition**
+Notice `/` in else tag.
 
-The condition to be use. There can be interpolations in condition. ie. `condition="{{a}} > {{b}}"`.
+Condition attribute can contains interpolations and string, i.e.
+
+```
+<if condition="{{a}} < 2"></if>
+```
 
 ## Properties and Methods
 
@@ -198,46 +232,22 @@ An array. The VNodes Tree (which is the same structure as DOM structure) of this
 
 ### vnodes
 
-Flat structure VNodes list. All VNodes are in this array. You can use `filter` method to pick out what you want.
-
-### render()
-
-When a vdom instance created, it will not render to the true DOM until you call render method.
-
-NOTICE: you should not call render method again until you call destroy.
+Flat structure VNodes list. All VNodes are in this array. You can use `Array.prototype.filter` method to pick out what you want.
 
 ### update(data)
 
 Use new data to update view. The `data` will be merged into old data.
 
-NOTICE: you should not call update method before you call render.
+In fact, you can use new template to re-render, like:
+
+```
+vdom.template = 'my new tempalte: <div>{{ text }}</div>'
+vdom.update()
+```
 
 ### destroy()
 
-Destroy the mounted VNodes. And then you can reuse `render` method to render again before you destroy this instance.
-
-### createDOM()
-
-After you initailize the class, you get the instance. If you do not want to render it immediately, and want to get vtree, you can call `this.vtree`. If you want to create elements manually, you can call `createDOM` methods:
-
-```
-let vdom = new VirtualDOM({ ... })
-// not call vdom.render()
-let elements = vdom.createDOM()
-
-elements.forEach(element => {
-  document.querySelector('#app').appendChild(element)
-})
-```
-
-**NOTICE**: when you destroy the real DOM elements, you should set `elements` to be null, like:
-
-```
-vdom.destroy()
-elements = null
-```
-
-If you do not do as this, these DOM elements will stay in memory.
+Destroy real DOM elements in document.
 
 ## Development
 

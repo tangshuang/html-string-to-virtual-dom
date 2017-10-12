@@ -43,6 +43,7 @@ module.exports = [
     },
     externals: {
       htmlparser2: 'commonjs2 htmlparser2',
+      lodash: 'commonjs2 lodash',
     },
     module: {
       rules: [
