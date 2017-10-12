@@ -35,6 +35,7 @@ export default class VirtualDOM {
           attrs,
           children: [],
           parent: null,
+          events: {},
         }
 
         // record whether this tag is in a directive
@@ -141,8 +142,8 @@ export default class VirtualDOM {
       // interpose attrs
       else {
         foreach(attrs, (k, v) => {
-          v = interpose(v, keys, values)
           v = interpose(v, keys.concat(funcs), values.concat(callbacks), '{{:')
+          v = interpose(v, keys, values)
           attrs[k] = v
   
           // bind events

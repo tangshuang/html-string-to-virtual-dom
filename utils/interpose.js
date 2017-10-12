@@ -42,7 +42,7 @@ export default function(str, keys, values, before = '{{', after = '}}') {
         }
       }
       else {
-        // console.error(`[hst-virtual-dom]: interpolation expression not suitable, original string ${expression} '${content}' will be output.`)
+        console.error(`[hst-virtual-dom]: interpolation expression not suitable, original string ${expression} '${content}' will be output.`)
       }
 
       // other sutiations

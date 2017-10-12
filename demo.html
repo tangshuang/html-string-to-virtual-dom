@@ -48,7 +48,7 @@ let vdom = new VirtualDOM({
     transactext: 'state1',
     fontColor: 'blue',
   },
-  events: {
+  methods: {
     input(e) {
       e.target.value = 'xxx'
     },
@@ -84,7 +84,7 @@ let vdom = new VirtualDOM({
         template: `
           <div class="my-custom-directive" onclick={{:click}}></div>
         `,
-        events: {
+        methods: {
           click(e) {
             events.trigger('dont click me!')
           },
