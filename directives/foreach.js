@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
 import foreach from '../utils/foreach'
 import recursive from '../utils/recursive'
 import interpose from '../utils/interpose'

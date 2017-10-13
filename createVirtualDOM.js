@@ -75,17 +75,27 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
 
   // calculate every node's hash code
   nodes.forEach(node => {
-    if (node.key) {
-      return node.key
-    }
     let hashsrc = ''
-    if (node.text) {
+
+    // if there is a `key` attribute for current node, use this key for hash code
+    if (node.key) {
+      hashsrc = node.key
+    }
+    // text node are same node type, so they use same node hash code
+    else if (node.text !== undefined) {
       hashsrc = '[[text node]]'
     }
+    // normal tag nodes, use tag name and attributes for hash code
     else {
       hashsrc += node.name + ':'
       hashsrc += JSON.stringify(node.attrs)
     }
+
+    // tags in directive are different, they may show/hide by directive toggle action
+    if (node._isDirective || node._isDirectiveChild) {
+      hashsrc += ':isdirective'
+    }
+
     node._hash = hashCode(hashsrc)
   })
 

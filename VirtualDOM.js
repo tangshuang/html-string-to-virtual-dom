@@ -8,6 +8,7 @@ import foreach from './utils/foreach'
 import merge from './utils/merge'
 import { isNode, isElement } from './utils/isDOM'
 
+import cloneDeep from 'lodash/cloneDeep'
 
 export { createVirtualDOM, createDOM, diff, patch }
 export default class VirtualDOM {
