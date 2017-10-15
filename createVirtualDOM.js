@@ -33,8 +33,9 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
         parent.children.push(node)
         // if its parent is a directive/directive child, it should be added a tag
         // vnodes which has _directive prop will be removed from original vnodes list
-        if (parent._isDirective || parent._isDirectiveChild) {
-          node._isDirectiveChild = true
+        let directiveName = parent._isDirective || parent._isDirectiveChildOf
+        if (directiveName) {
+          node._isDirectiveChildOf = directiveName
         }
       }
 
@@ -58,8 +59,9 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
       if (parent) {
         node.parent = parent
         parent.children.push(node)
-        if (parent._isDirective || parent._isDirectiveChild) {
-          node._isDirectiveChild = true
+        let directiveName = parent._isDirective || parent._isDirectiveChildOf
+        if (directiveName) {
+          node._isDirectiveChildOf = directiveName
         }
       }
 
@@ -92,8 +94,9 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
     }
 
     // tags in directive are different, they may show/hide by directive toggle action
-    if (node._isDirective || node._isDirectiveChild) {
-      hashsrc += ':isdirective'
+    let directiveName = node._isDirective || node._isDirectiveChildOf
+    if (directiveName) {
+      hashsrc += ':directive=' + directiveName
     }
 
     node._hash = hashCode(hashsrc)
@@ -164,11 +167,11 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
   let vtree = vnodes.filter(item => !item.parent)
 
   // find out top level directives, and recursive them to generator new vnodes
-  let vdirectives = vnodes.filter(item => item._isDirective && !item._isDirectiveChild)
+  let vdirectives = vnodes.filter(item => item._isDirective && !item._isDirectiveChildOf)
 
   // delete directive relative nodes from vnodes list,
   // in directive function, new nodes will be put into vnodes list, so do not be worried about this
-  vnodes = vnodes.filter(item => !item._isDirective && !item._isDirectiveChild)
+  vnodes = vnodes.filter(item => !item._isDirective && !item._isDirectiveChildOf)
 
   function directiveProcessor({ vnode, definations, vnodes, vtree }) {
     let { name, attrs, children, events, parent } = vnode
@@ -187,7 +190,7 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
     borthers.splice(i, 1, ...childNodes)
   
     // deal with child directives
-    // delete _isDirective and _isDirectiveChild
+    // delete _isDirective and _isDirectiveChildOf
     childNodes.forEach(item => {
       recursive(item, 'children', child => {
         if (child._isDirective) {
@@ -195,18 +198,18 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
         }
   
         // delete child._isDirective
-        // delete child._isDirectiveChild
+        // delete child._isDirectiveChildOf
         vnodes.push(child)
       })
   
       // delete item._isDirective
-      // delete item._isDirectiveChild
+      // delete item._isDirectiveChildOf
       vnodes.push(item)
     })
   }
   vdirectives.forEach(vnode => {
     // in directive function, new vnodes are created and replace the directive node in its borthers list,
-    // and _isDirective and _isDirectiveChild are deleted
+    // and _isDirective and _isDirectiveChildOf are deleted
     directiveProcessor({ vnode, definations: directives, vnodes, vtree })
   })
 
