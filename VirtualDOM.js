@@ -12,9 +12,9 @@ import cloneDeep from 'lodash/cloneDeep'
 
 export { createVirtualDOM, createDOM, diff, patch }
 export default class VirtualDOM {
-  constructor({ template, data = {}, methods = {}, directives = {}, selector }) {
+  constructor({ template, state = {}, methods = {}, directives = {}, selector }) {
     this.template = template.trim()
-    this.data = data
+    this.state = state
     this.methods = methods
     this.directives = merge(defaultDirectives, directives)
     this.selector = selector
@@ -22,11 +22,11 @@ export default class VirtualDOM {
     this.render()    
   }
   create() {
-    let { template, data, methods, directives } = this
+    let { template, state, methods, directives } = this
     foreach(directives, (name, defination) => directives[name] = defination.bind(this))
     foreach(methods, (name, func) => methods[name] = func.bind(this))
 
-    let { vnodes, vtree } = createVirtualDOM({ template, data, methods, directives })
+    let { vnodes, vtree } = createVirtualDOM({ template, state, methods, directives })
 
     this.vnodes = vnodes
     this.vtree = vtree
@@ -40,8 +40,8 @@ export default class VirtualDOM {
     
     this.container = container
   }
-  update(data) {
-    this.data = merge(this.data, data)
+  update(state) {
+    this.state = merge(this.state, state)
     
     this.$$transactionPromises = this.$$transactionPromises || []
     this.$$transactionResolves = this.$$transactionResolves || []

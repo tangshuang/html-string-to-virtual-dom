@@ -1,5 +1,5 @@
 import foreach from './foreach'
-import ifcondition from './if'
+import if_directive from './if'
 import forloop from './for'
 
-export { foreach, ifcondition as if, forloop as for }
+export { foreach, if_directive as if, forloop as for }

@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 
 <div id="app"></div>
-<div id="app2"></div>
 
-<script src="./dist/VirtualDOM.browser.js"></script>
+<script src="../dist/VirtualDOM.browser.js"></script>
 <script>
 let { createVirtualDOM } = window.VirtualDOM
 window.VirtualDOM = window.VirtualDOM['default']
@@ -39,7 +38,7 @@ let vdom = new VirtualDOM({
       </p>
     </div>
   `,
-  data: {
+  state: {
     id: 'my-test',
     text: 'this is my first VirtualDOM demo.',
     cats: {
@@ -56,28 +55,28 @@ let vdom = new VirtualDOM({
     },
     click(e) {
       e.preventDefault()
-      vdom.update({
+      this.update({
         text: 'this is new content ' + Date.now(),
       })
     },
     toggle(e) {
       e.preventDefault()
-      vdom.update({
-        isShow: !vdom.data.isShow,
+      this.update({
+        isShow: !this.state.isShow,
       })
     },
     trigger(msg) {
       alert(msg)
     },
     transact() {
-      vdom.update({ transactext: 'state2' }).then(() => {
-        console.log(vdom.data.transactext)
+      this.update({ transactext: 'state2' }).then(() => {
+        console.log(this.state.transactext)
       })
-      console.log(vdom.data.transactext)
-      vdom.update({ transactext: 'state3' })
+      console.log(this.state.transactext)
+      this.update({ transactext: 'state3' })
     },
     changeColor() {
-      vdom.update({ fontColor: vdom.data.fontColor === 'red' ? 'blue' : 'red' })
+      this.update({ fontColor: this.state.fontColor === 'red' ? 'blue' : 'red' })
     },
   },
   directives: {
@@ -97,49 +96,6 @@ let vdom = new VirtualDOM({
       return vtree
     },
   },
-  selector: document.querySelector('#app'),
+  selector: '#app',
 })
-
-// let vdom = new VirtualDOM({
-//   template: '<go></go>',
-//   directives: {
-//     go({ attrs, children }) {
-//       return children
-//     },
-//   },
-// })
-// console.log(vdom.vtree)
-
-
-// let vdom2 = new VirtualDOM({
-//   template: `
-//     root {{ text }} {{ text }}
-//     <div>
-//       parent text node
-//       <span>child text node</span>
-//     </div>
-//     <if condition="1 < 2">
-//       <span>I am true.</span>
-//     <else />
-//       <span>I am false.</span>
-//     </if>
-//     <for start="0" end="5" current="i">
-//       <span>now {{ i }}, </span>
-//     </for>
-//     <foreach data="{{ items }}" key="name" value="age">
-//       <span>{{ name }} is {{ age }} years old.</span>
-//     </foreach>
-//   `,
-//   data: {
-//     text: 'test text',
-//     items: {
-//       liming: 12,
-//       xiaohua: 13,
-//       lily: 14,
-//     },
-//   },
-//   selector: '#app2',
-// })
-// vdom2.render()
-// console.log(vdom2.vtree)
 </script>

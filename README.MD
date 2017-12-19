@@ -43,7 +43,7 @@ let vdom = new VirtualDOM({
       <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
     </div>
   `,
-  data: {
+  state: {
     id: 'my-test',
     text: 'this is my first VirtualDOM demo.',
     cats: {
@@ -52,7 +52,7 @@ let vdom = new VirtualDOM({
     },
     isShow: true,
   },
-  method: {
+  methods: {
     input(e) {
       e.target.value = 'xxx'
     },
@@ -65,7 +65,7 @@ let vdom = new VirtualDOM({
     toggle(e) {
       e.preventDefault()
       vdom.update({
-        isShow: !vdom.data.isShow,
+        isShow: !vdom.state.isShow,
       })
     },
   },
@@ -81,14 +81,14 @@ When you use `new` to initialize a vdom, you should pass options:
 
 HTML string template. Support interpolations.
 
-### data
+### state
 
-`data` option is used to be rendered for interpolation. Almost data types are supported, even object and array.
+`state` option is used to be rendered for interpolation. Almost data types are supported, even object and array.
 
 ```
 {
   template: `<foreach data={{cats}} key="name" value="age">{{name}} {{age}}</foreach>`,
-  data: {
+  state: {
     cats: { 
       tom: 3,
       lily: 5,
@@ -106,6 +106,8 @@ Functions. Used in `{{:}}` special interpolations.
 
 ### directives
 
+*optional.*
+
 Directive defination functions. 
 `this` in directives defination functions are point to the VirtualDOM instance. 
 Read more in *Directives*.
@@ -114,10 +116,9 @@ Read more in *Directives*.
 
 DOM element container, the element which vdom mounts to when render.
 
-
 ## Interpolation
 
-Use `{{value}}` in template string, `value` is the property name of `data`, the value should be string or number.
+Use `{{value}}` in template string, `value` is the property name of `state`, the value should be string or number.
 
 Simple JS expression is supported, i.e.
 
@@ -127,7 +128,7 @@ Simple JS expression is supported, i.e.
 
 But it is not recommended. We use `Function` which use `eval` to implement this, so there may be some security problem.
 
-Interpolation can only be used in textNode or tag attribute value. Tag name, JS complex expression are not supported. And to be more sample as React, you can do like this:
+Interpolation can only be used in textNode or tag attribute value. Tag name, JS complex expression are not supported. And to be more like React, you can do like this:
 
 ```
 <a href={{link}} onClick={{:onClick}}>{{text}}</a>
@@ -184,7 +185,7 @@ Directive's children vtree, sub tags in html string template.
 
 The function must return an array which is made up with vtree. `children` are vtree. 
 If you want to add new vtree, you can use another VirtualDOM instance to implement. 
-Look into `/directives/if.js` for an example.
+Look into `./directives/if.js` for an example.
 
 ## default directives
 
@@ -238,9 +239,16 @@ An array. The VNodes Tree (which is the same structure as DOM structure) of this
 
 Flat structure VNodes list. All VNodes are in this array. You can use `Array.prototype.filter` method to pick out what you want.
 
-### update(data)
+It is easy to find out some nodes which has certain class:
 
-Use new data to update view. The `data` will be merged into old data.
+```
+let mynodes = vdom.vnodes.filter(vnode => Array.isArray(vnode.class) && vnode.class.indexOf('my-className') > -1)
+let myelements = mynodes.map(vnode => vnode.$dom)
+```
+
+### update(state)
+
+Use new state to update view. The `state` will be merged into old state.
 
 In fact, you can use new template to re-render, like:
 
@@ -251,7 +259,8 @@ vdom.update()
 
 ### destroy()
 
-Destroy real DOM elements in document.
+Destroy real DOM elements in document. 
+Remember: instance will not be destroyed.
 
 ## Development
 

@@ -4,7 +4,7 @@ import interpose from './utils/interpose'
 import recursive from './utils/recursive'
 import hashCode from './utils/hashCode'
 
-export default function createVirtualDOM({ template, data = {}, methods = {}, directives = {} }) {
+export default function createVirtualDOM({ template, state = {}, methods = {}, directives = {} }) {
   // create an array to save parsed nodes
   let nodes = []
   // create an array to record node's depth
@@ -109,17 +109,17 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
   // even contains all directive children
   let tree = nodes.filter(node => !node.parent)
 
-  // replace interpolations which can use expression width data, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
+  // replace interpolations which can use expression width state, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
   let keys = []
   let values = []
-  foreach(data, (key, value) => {
+  foreach(state, (key, value) => {
     keys.push(key)
     values.push(value)
   })
 
   // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
   // the expression result should be a function if you want to bind it to events
-  // NOTICE: data property names and methods property names should be unique
+  // NOTICE: state property names and methods property names should be unique
   let funcs = []
   let callbacks = []
   foreach(methods, (func, callback) => {
@@ -134,8 +134,8 @@ export default function createVirtualDOM({ template, data = {}, methods = {}, di
 
     // interpose text
     if (text !== undefined) {
-      text = interpose(text, keys, values) // interpose width data
-      text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and data
+      text = interpose(text, keys, values) // interpose width state
+      text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and state
       child.text = text
     }
     // interpose attrs
