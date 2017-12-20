@@ -26,7 +26,7 @@ export default function(str, keys, values, before = '{{', after = '}}') {
       let expression = content.replace(before, '').replace(after, '').trim()
       
       // if only a word, just to find out the value
-      if (/^[a-zA-Z_][a-zA-Z0-9_\.]*?[a-zA-Z0-9_]$/.test(expression)) {
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*?[a-zA-Z0-9_]$/.test(expression)) {
         let index = keys.indexOf(expression)
         let value = index > -1 ? values[index] : content
         return value

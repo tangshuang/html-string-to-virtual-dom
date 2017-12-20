@@ -22,6 +22,11 @@ let vdom = new VirtualDOM({
           <li>{{name}}'s color is {{color}}</li>
         </foreach>
       </ul>
+      <ol>
+        <foreach data="{{ books }}"  key="i" value="book">
+          <li>{{ book.name }}: {{ book.price }}</li>
+        </foreach>
+      </ol>
       <if condition="{{isShow}}">
         <p>this will be show.</p>
       </if>
@@ -45,6 +50,16 @@ let vdom = new VirtualDOM({
       caf: 'red',
       sam: 'yellow',
     },
+    books: [
+      {
+        name: 'luomen',
+        price: 12,
+      },
+      {
+        name: 'red rose',
+        price: 23,
+      },
+    ],
     isShow: true,
     transactext: 'state1',
     fontColor: 'blue',
