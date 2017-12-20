@@ -116,6 +116,16 @@ Read more in *Directives*.
 
 DOM element container, the element which vdom mounts to when render.
 
+If you do not give selector, you may want to create a virtual dom instance step by step:
+
+```
+let vdom = new VirtualDOM({ template, state })
+vdom.create() // notice: you should run .create by your self.
+vdom.mount('#app')
+vdom.update({ name: 'xxx' })
+vdom.destroy()
+```
+
 ## Interpolation
 
 Use `{{value}}` in template string, `value` is the property name of `state`, the value should be string or number.
@@ -245,6 +255,16 @@ It is easy to find out some nodes which has certain class:
 let mynodes = vdom.vnodes.filter(vnode => Array.isArray(vnode.class) && vnode.class.indexOf('my-className') > -1)
 let myelements = mynodes.map(vnode => vnode.$dom)
 ```
+
+### create()
+
+Create virtual dom in memory. after `.create()`, this.vtree and this.vnodes exist.
+
+### mount(selector)
+
+Create true DOM nodes in document.
+
+NOTICE: if you have passed selector in constructor, `.create()` and `.mount(selector)` are auto run.
 
 ### update(state)
 

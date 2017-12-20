@@ -17,9 +17,10 @@ export default class VirtualDOM {
     this.state = state
     this.methods = methods
     this.directives = merge(defaultDirectives, directives)
-    this.selector = selector
-    this.create()
-    this.render()    
+    if (selector) {
+      this.create()
+      this.mount(selector)
+    }
   }
   create() {
     let { template, state, methods, directives } = this
@@ -31,8 +32,8 @@ export default class VirtualDOM {
     this.vnodes = vnodes
     this.vtree = vtree
   }
-  render() {
-    let { vnodes, vtree, selector } = this
+  mount(selector) {
+    let { vnodes, vtree } = this
     let elements = createDOM(vtree)
     let container = (isNode(selector) || isElement(selector)) ? selector : document.querySelector(selector)
     
@@ -74,16 +75,19 @@ export default class VirtualDOM {
 
     return Promise.all(this.$$transactionPromises)
   }
-
   // destroy method only destroy real DOM nodes, do not destroy vnodes/vtree,
-  // so you can run render method again after you run destroy
+  // so you can run mount method again after you run destroy
   destroy() {
     let rootElements = []
     this.vtree.forEach(vnode => {
       rootElements.push(vnode.$dom)
     })
     this.vnodes.forEach(vnode => {
+      let { events } = vnode
       let el = vnode.$dom
+      foreach(events, (event, callback) => {
+        el.removeEventListener(event)
+      })
       el.$vnode = null
       vnode.$dom = null
     })
