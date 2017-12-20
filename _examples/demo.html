@@ -41,6 +41,26 @@ let vdom = new VirtualDOM({
       <p>
         <a href="javascript:" onclick="{{:changeColor}}" style="color: {{fontColor}}">change color</a>
       </p>
+      <div class="grid">
+        <foreach data="{{ columns }}" key="n" value="column" debug="{{ true }}">
+          <span class="grid-cell" style="display: inline-block; width: 40px;">{{ column.name }}</span>
+        </foreach>
+        <foreach data="{{ rows }}" key="i" value="row">
+          <div class="grid-row" data-row="{{ row.id }}">
+            <foreach data="{{ columns }}" key="n" value="column" debug="{{ true }}">
+              <span class="grid-cell" data-col="{{ column.field }}" style="display: inline-block; width: 40px;">{{ row[column.field] }}</span>
+            </foreach>
+          </div>
+        </foreach>
+      </div>
+      <div class="rows">
+        <for start="1" end="5" current="i">
+          <for start="1" end="5" current="n">
+            {{ i }} - {{ n }}
+          </for>
+          <br />
+        </for>
+      </div>
     </div>
   `,
   state: {
@@ -58,6 +78,26 @@ let vdom = new VirtualDOM({
       {
         name: 'red rose',
         price: 23,
+      },
+    ],
+    columns: [
+      {
+        name: 'Id',
+        field: 'id',
+      },
+      {
+        name: 'Name',
+        field: 'name',
+      },
+    ],
+    rows: [
+      {
+        id: '1',
+        name: 'lily',
+      },
+      {
+        id: '2',
+        name: 'tom',
       },
     ],
     isShow: true,

@@ -166,7 +166,7 @@ let vdom = new VirtualDOM({
     <my-directive></my-directive>
   `,
   directives: {
-    'my-directive': function({ attrs, events, children }) {
+    'my-directive': function({ attrs, events, children }, directive_vnode) {
       // defination code...
       // must return a vtree
     },

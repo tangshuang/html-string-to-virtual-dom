@@ -181,9 +181,9 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
     // or parent will be cloned, which may cause memory out
     children.forEach(item => delete item.parent)
   
-    let childNodes = defination({ attrs, children, events }) || children
+    let childNodes = defination({ attrs, children, events }, vnode) || children
     childNodes.forEach(item => parent ? item.parent = parent : null)
-  
+
     // use new nodes to replace current directive
     let borthers = parent ? parent.children : vtree
     let i = borthers.indexOf(vnode)
@@ -192,9 +192,13 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
     // deal with child directives
     // delete _isDirective and _isDirectiveChildOf
     childNodes.forEach(item => {
+      if (item._isDirective) {
+        return directiveProcessor({ vnode: item, definations, vnodes, vtree }, item)
+      }
+
       recursive(item, 'children', child => {
         if (child._isDirective) {
-          directiveProcessor({ vnode: child, definations, vnodes, vtree })
+          return directiveProcessor({ vnode: child, definations, vnodes, vtree }, child)
         }
   
         // delete child._isDirective

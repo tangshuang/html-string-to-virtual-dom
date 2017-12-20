@@ -32,11 +32,11 @@ export default function(str, keys, values, before = '{{', after = '}}') {
         return value
       }
 
-      // if contains: +-*/% ?: == > < && || ! ()
+      // if contains: +-*/% ?: == > < && || ! () []
       if (
         /^[a-zA-Z0-9\(_]/.test(expression) 
-        && /^[a-zA-Z0-9_\+\-\*\/%\?:=><&\|\!\(\)\s\.]+$/.test(expression)
-        && /[a-zA-Z0-9_\+\-\)]$/.test(expression)
+        && /^[a-zA-Z0-9_\+\-\*\/%\?:=><&\|\!\(\)\[\]\s\.]+$/.test(expression)
+        && /[a-zA-Z0-9_\+\-\)\]]$/.test(expression)
       ) {
         try {
           res = Function(...keys, 'return ' + expression)(...values)
