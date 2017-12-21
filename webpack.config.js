@@ -40,6 +40,7 @@ module.exports = [
       path: __dirname + '/dist',
       filename: 'VirtualDOM.js',
       libraryTarget: 'umd',
+      library: 'VirtualDOM',
     },
     externals: {
       htmlparser2: 'commonjs2 htmlparser2',
