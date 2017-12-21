@@ -8,47 +8,47 @@ let { createVirtualDOM } = window.VirtualDOM
 window.VirtualDOM = window.VirtualDOM['default']
 let vdom = new VirtualDOM({
   template: `
-    <div id="{{id}}">
-      <p>{{text}}</p>
-      <p><a href="javascript:" onclick="{{click}}">click me to refresh content</a></p>
-      <p><input onkeyup="{{input}}" value=""></p>
+    <div id="{id}">
+      <p>{text}</p>
+      <p><a href="javascript:" onclick="{click}">click me to refresh content</a></p>
+      <p><input onkeyup="{input}" value=""></p>
       <p><input type="checkbox"><label>check me</label></p>
       <p><select>
         <option>click to change</option>
         <option>touch to change</option>  
       </select></p>
       <ul>
-        <foreach data="{{cats}}" key="name" value="color">
-          <li>{{name}}'s color is {{color}}</li>
+        <foreach data="{cats}" key="name" value="color">
+          <li>{name}'s color is {color}</li>
         </foreach>
       </ul>
       <ol>
-        <foreach data="{{ books }}"  key="i" value="book">
-          <li>{{ book.name }}: {{ book.price }}</li>
+        <foreach data="{ books }"  key="i" value="book">
+          <li>{ book.name }: { book.price }</li>
         </foreach>
       </ol>
-      <if condition="{{isShow}}">
+      <if condition="{isShow}">
         <p>this will be show.</p>
       </if>
-      <p><a href="javascript:" onclick="toggle}}">toggle</a></p>
-      <my-directive onTrigger={{trigger}}>
+      <p><a href="javascript:" onclick="{toggle}">toggle</a></p>
+      <my-directive onTrigger={trigger}>
         <div>dont click me</div>
       </my-directive>
       <p>
-        <a href="javascript:" onclick="{{transact}}">transaction testing</a> 
-        <span>{{transactext}}</span>
+        <a href="javascript:" onclick="{transact}">transaction testing</a> 
+        <span>{transactext}</span>
       </p>
       <p>
-        <a href="javascript:" onclick="{{changeColor}}" style="color: {{fontColor}}">change color</a>
+        <a href="javascript:" onclick="{changeColor}" style="color: {fontColor}">change color</a>
       </p>
       <div class="grid">
-        <foreach data="{{ rows }}" key="i" value="row">
-          <div class="grid-row" data-row="{{ row.id }}">
-            <foreach data="{{ columns }}" key="n" value="column">
-              <span class="grid-cell" data-col="{{ column.field }}" style="display: inline-block; width: {{ column.width }}px;">
-                {{ format(column.name) }}:
-                {{ row[column.field] }}
-                {{ column.field === 'name' ? books[row.id].name : '' }}
+        <foreach data="{ rows }" key="i" value="row">
+          <div class="grid-row" data-row="{ row.id }">
+            <foreach data="{ columns }" key="n" value="column">
+              <span class="grid-cell" data-col="{ column.field }" style="display: inline-block; width: { column.width }px;">
+                { format(column.name) }:
+                { row[column.field] }
+                { column.field === 'name' ? books[row.id].name : '' }
               </span>
             </foreach>
           </div>
@@ -57,7 +57,7 @@ let vdom = new VirtualDOM({
       <div class="rows">
         <for start="1" end="5" current="i">
           <for start="1" end="5" current="n">
-            {{ i }} - {{ n }} || {{ transactext }}
+            { i } - { n }
           </for>
           <br />
         </for>
@@ -144,7 +144,7 @@ let vdom = new VirtualDOM({
     'my-directive': function({ attrs, events, children }) {
       let myVDOM = createVirtualDOM({
         template: `
-          <div class="my-custom-directive" onclick={{click}}></div>
+          <div class="my-custom-directive" onclick={click}></div>
         `,
         methods: {
           click(e) {

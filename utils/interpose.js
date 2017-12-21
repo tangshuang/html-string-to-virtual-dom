@@ -1,4 +1,4 @@
-export default function(str, keys, values, before = '{{', after = '}}') {
+export default function(str, keys, values, before = '{', after = '}') {
   if (typeof str !== 'string') {
     return str
   }

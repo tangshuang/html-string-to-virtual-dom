@@ -13,7 +13,6 @@ Or use in browser directly:
 ```
 <script src="dist/VirtualDOM.browser.js"></script>
 <script>
-window['createVirtualDOM'] = window['VirtualDOM']['createVirtualDOM'] // use this in directive defination function
 window['VirtualDOM'] = window['VirtualDOM']['default']
 </script>
 ```
@@ -22,25 +21,23 @@ window['VirtualDOM'] = window['VirtualDOM']['default']
 
 
 ```
-import VirtualDOM from 'hst-virtual-dom' 
-// using module, 
-// if you do not use browser mode, VirtualDOM class is visible on window
+import VirtualDOM from 'hst-virtual-dom'
 
 let vdom = new VirtualDOM({
   template: `
-    <div id="{{id}}">
-      <p>{{text}}</p>
-      <p><a href="javascript:" onclick="{{:click}}">click me to refresh content</a></p>
-      <p><input onkeyup="{{:input}}" value=""></p>
+    <div id="{id}">
+      <p>{text}</p>
+      <p><a href="javascript:" onclick="{click}">click me to refresh content</a></p>
+      <p><input onkeyup="{input}" value=""></p>
       <ul>
-        <foreach data="{{cats}}" key="name" value="color">
-          <li>{{name}}'s color is {{color}}</li>
+        <foreach data="{cats}" key="name" value="color">
+          <li>{name}'s color is {color}</li>
         </foreach>
       </ul>
-      <if condition="{{isShow}}">
+      <if condition="{isShow}">
         <p>this will be show.</p>
       </if>
-      <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
+      <p><a href="javascript:" onclick="{toggle}">toggle</a></p>
     </div>
   `,
   state: {
@@ -58,13 +55,13 @@ let vdom = new VirtualDOM({
     },
     click(e) {
       e.preventDefault()
-      vdom.update({
+      this.update({
         text: 'this is new content ' + Date.now(),
       })
     },
     toggle(e) {
       e.preventDefault()
-      vdom.update({
+      this.update({
         isShow: !vdom.state.isShow,
       })
     },
@@ -87,7 +84,7 @@ HTML string template. Support interpolations.
 
 ```
 {
-  template: `<foreach data={{cats}} key="name" value="age">{{name}} {{age}}</foreach>`,
+  template: `<foreach data={cats} key="name" value="age">{name} {age}</foreach>`,
   state: {
     cats: { 
       tom: 3,
@@ -101,54 +98,58 @@ Here `cats` is an object which is passed into `foreach`'s `data` attribute.
 
 ### methods
 
-Functions. Used in `{{:}}` special interpolations. 
+Functions. 
+
 `this` in methods functions are point to the VirtualDOM instance.
+
+NOTICE: state properties and method properties will be used in template's interpolations. So you should make every property name unique in the whole scope.
 
 ### directives
 
-*optional.*
+*optional*
 
 Directive defination functions. 
+
 `this` in directives defination functions are point to the VirtualDOM instance. 
+
 Read more in *Directives*.
 
 ### selector
 
-DOM element container, the element which vdom mounts to when render.
+*optional*
+
+DOM element container, the element which vdom mounts to.
 
 If you do not give selector, you may want to create a virtual dom instance step by step:
 
 ```
 let vdom = new VirtualDOM({ template, state })
 vdom.create() // notice: you should run .create by your self.
-vdom.mount('#app')
+vdom.mount('#app') // look here, you pass selector to .mount method
 vdom.update({ name: 'xxx' })
 vdom.destroy()
 ```
 
 ## Interpolation
 
-Use `{{value}}` in template string, `value` is the property name of `state`, the value should be string or number.
+Use `{value}` in template string, `value` is the property name of `state` or `methods`, as mentioned, all types of data supported, even functions.
+However, data in `state` should not be function. Properties of `methods` should be function so that `this` can be used in `methods`.
 
 Simple JS expression is supported, i.e.
 
 ```
-{{ a + 1 }}
+{ a + 1 }
 ```
 
-But it is not recommended. We use `Function` which use `eval` to implement this, so there may be some security problem.
+But it is not recommended. We use `Function` which use `eval` to implement this, so there may be some security problem. The best practice in interpolations is use single words, like `{age}` `{name}`, this is the best way. You may have impulse to use `{user.name}` `{books[0].count}`, it is ok, but not recommend because of security issues. To implement this, you should use `foreach` directive instead. 
 
 Interpolation can only be used in textNode or tag attribute value. Tag name, JS complex expression are not supported. And to be more like React, you can do like this:
 
 ```
-<a href={{link}} onClick={{:onClick}}>{{text}}</a>
+<a href={link} onClick={onClick}>{text}</a>
 ```
 
-Which has no space in interpolations.
-
-**Use `methods` interpolation:**
-
-Use `{{:eventHandler}}` in template string, `eventHandler` is the property name of `methods`, the value should be a function.
+Which has no space in interpolations. Double quotes should always be there if there are some spaces in interpolations.
 
 ## Directives
 
@@ -166,7 +167,7 @@ let vdom = new VirtualDOM({
     <my-directive></my-directive>
   `,
   directives: {
-    'my-directive': function({ attrs, events, children }, directive_vnode) {
+    'my-directive': function(vnode) {
       // defination code...
       // must return a vtree
     },
@@ -174,28 +175,46 @@ let vdom = new VirtualDOM({
 })
 ```
 
-##defination function
+## defination function
 
 Defination function is a function which define the directive's behavior. 
-It has 3 options:
 
-*attrs*
+It has only one parameter: `vnode`.
 
-Directive's attributes in html string template.
+```
+// person.js
+import { createVirtualDOM } from 'hst-virtual-dom'
+export default function(vnode) {
+  let { attrs } = vnode
+  let { name, age } = attrs
+  let { vtree } = createVirtualDOM({
+    template: `
+      <div class="my-container">
+        <div>{name} {age}</div>
+      </div>
+    `,
+  })
+  // here I use createVirtualDOM helper to get a vtree quickly
+  return vtree
+}
+```
 
-*events*
-
-Directive's events functions in html string template. Yes, it supports events attribute with `on` at the beginning of attr name.
-
-*children*
-
-Directive's children vtree, sub tags in html string template.
+```
+import personCreator from './person'
+let vdom = new VirtualDOM({
+  template: `
+    <person name="tom" age="12"></person>
+  `,
+  directives: {
+    'person': personCreator,
+  },
+})
+```
 
 *@return*
 
-The function must return an array which is made up with vtree. `children` are vtree. 
-If you want to add new vtree, you can use another VirtualDOM instance to implement. 
-Look into `./directives/if.js` for an example.
+The function must return an array which is made up with vtree.
+If you want to know more about this, you can read the source code of `foreach` directive.
 
 ## default directives
 
@@ -204,16 +223,18 @@ Now we have 3 default directives, `for` `foreach` and `if`.
 ### for
 
 ```
-<for start="1" end="10" current="i">{{ i }}</for>
+<for start="1" end="10" current="i">{i}</for>
 ```
 
 With this code, it will print [1-10] numbers in screen.
 
+If start is bigger then end, for example start="10" end="1", the loop will start from 10 to 1.
+
 ### foreach
 
 ```
-<foreach data="{{ items }}" key="i" value="v">
-  {{ i }} => {{ v }}
+<foreach data="{items}" key="i" value="v">
+  {i} => {v}
 </foreach>
 ```
 
@@ -222,7 +243,7 @@ With this code, it will print [1-10] numbers in screen.
 ### if...else
 
 ```
-<if condition="{{ a < b }}">
+<if condition="{ a < b }">
   <span>show</span>
 <else />
   <span>hide</span>
@@ -234,7 +255,7 @@ Notice `/` in else tag.
 Condition attribute can contains interpolations and string, i.e.
 
 ```
-<if condition="{{a}} < 2"></if>
+<if condition="{a} < 2"></if>
 ```
 
 ## Properties and Methods
@@ -273,7 +294,7 @@ Use new state to update view. The `state` will be merged into old state.
 In fact, you can use new template to re-render, like:
 
 ```
-vdom.template = 'my new tempalte: <div>{{ text }}</div>'
+vdom.template = 'my new tempalte: <div>{text}</div>'
 vdom.update()
 ```
 

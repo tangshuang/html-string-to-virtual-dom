@@ -1,9 +1,9 @@
 import { Parser } from 'htmlparser2'
 import foreach from './utils/foreach'
-import interpose from './utils/interpose'
 import recursive from './utils/recursive'
 import hashCode from './utils/hashCode'
 import merge from './utils/merge'
+import interposeVNode from './utils/interposeVNode'
 
 export default function createVirtualDOM({ template, state = {}, methods = {}, directives = {} }) {
   // create an array to save parsed nodes
@@ -111,7 +111,7 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
   let tree = nodes.filter(node => !node.parent)
 
   let scope = merge(state, methods)
-  // replace interpolations which can use expression width state, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
+  // replace interpolations which can use expression width state, i.e. { a + 1 } or { b.name } or { a + b }
   // replace interpolations which can use expression width methods
   // the expression result should be a function if you want to bind it to events
   // NOTICE: state property names and methods property names should be unique
@@ -128,34 +128,9 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
   recursive({ children: tree }, 'children', (child, parent) => {
     let { attrs, text, name } = child
 
+    interposeVNode(child, interposeKeys, interposeValues)
     // set scope, can be used in directive
     child._scope = scope
-
-    // interpose text
-    if (text !== undefined) {
-      text = interpose(text, interposeKeys, interposeValues) // interpose width state
-      child.text = text
-    }
-    // interpose attrs
-    else {
-      foreach(attrs, (k, v) => {
-        v = interpose(v, interposeKeys, interposeValues)
-        attrs[k] = v
-
-        // bind events
-        if (k.indexOf('on') === 0 && typeof attrs[k] === 'function') {
-          let event = k.substring(2).toLowerCase()
-          child.events[event] =  attrs[k]
-          // this attribute will be deleted from original attributes
-          delete attrs[k]
-        }
-      })
-
-      // generator id and class props, we can not generator them before value has been generatored
-      child.id = attrs.id || ''
-      child.class = attrs.class ? attrs.class.split(' ') : []
-      child.key = attrs.key || ''
-    }
 
     vnodes.push(child)
   })
@@ -187,12 +162,12 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
     // delete _isDirective and _isDirectiveChildOf
     childNodes.forEach(item => {
       if (item._isDirective) {
-        return directiveProcessor({ vnode: item, definations, vnodes, vtree }, item)
+        directiveProcessor({ vnode: item, definations, vnodes, vtree }, item)
       }
 
       recursive(item, 'children', child => {
         if (child._isDirective) {
-          return directiveProcessor({ vnode: child, definations, vnodes, vtree }, child)
+          directiveProcessor({ vnode: child, definations, vnodes, vtree }, child)
         }
   
         // delete child._isDirective
