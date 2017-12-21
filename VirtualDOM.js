@@ -1,5 +1,6 @@
 import createVirtualDOM from './createVirtualDOM'
 import createDOM from './createDOM'
+import cloneVNode from './utils/cloneVNode'
 
 import diff from './diff'
 import patch from './patch'
@@ -10,7 +11,7 @@ import { isNode, isElement } from './utils/isDOM'
 
 import cloneDeep from 'lodash/cloneDeep'
 
-export { createVirtualDOM, createDOM, diff, patch }
+export { createVirtualDOM, createDOM, diff, patch, cloneVNode }
 export default class VirtualDOM {
   constructor({ template, state = {}, methods = {}, directives = {}, selector }) {
     this.template = template.trim()

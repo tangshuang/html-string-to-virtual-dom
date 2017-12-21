@@ -10,8 +10,8 @@ let vdom = new VirtualDOM({
   template: `
     <div id="{{id}}">
       <p>{{text}}</p>
-      <p><a href="javascript:" onclick="{{:click}}">click me to refresh content</a></p>
-      <p><input onkeyup="{{:input}}" value=""></p>
+      <p><a href="javascript:" onclick="{{click}}">click me to refresh content</a></p>
+      <p><input onkeyup="{{input}}" value=""></p>
       <p><input type="checkbox"><label>check me</label></p>
       <p><select>
         <option>click to change</option>
@@ -30,25 +30,26 @@ let vdom = new VirtualDOM({
       <if condition="{{isShow}}">
         <p>this will be show.</p>
       </if>
-      <p><a href="javascript:" onclick="{{:toggle}}">toggle</a></p>
-      <my-directive onTrigger={{:trigger}}>
+      <p><a href="javascript:" onclick="toggle}}">toggle</a></p>
+      <my-directive onTrigger={{trigger}}>
         <div>dont click me</div>
       </my-directive>
       <p>
-        <a href="javascript:" onclick="{{:transact}}">transaction testing</a> 
+        <a href="javascript:" onclick="{{transact}}">transaction testing</a> 
         <span>{{transactext}}</span>
       </p>
       <p>
-        <a href="javascript:" onclick="{{:changeColor}}" style="color: {{fontColor}}">change color</a>
+        <a href="javascript:" onclick="{{changeColor}}" style="color: {{fontColor}}">change color</a>
       </p>
       <div class="grid">
-        <foreach data="{{ columns }}" key="n" value="column" debug="{{ true }}">
-          <span class="grid-cell" style="display: inline-block; width: 40px;">{{ column.name }}</span>
-        </foreach>
         <foreach data="{{ rows }}" key="i" value="row">
           <div class="grid-row" data-row="{{ row.id }}">
-            <foreach data="{{ columns }}" key="n" value="column" debug="{{ true }}">
-              <span class="grid-cell" data-col="{{ column.field }}" style="display: inline-block; width: 40px;">{{ row[column.field] }}</span>
+            <foreach data="{{ columns }}" key="n" value="column">
+              <span class="grid-cell" data-col="{{ column.field }}" style="display: inline-block; width: {{ column.width }}px;">
+                {{ format(column.name) }}:
+                {{ row[column.field] }}
+                {{ column.field === 'name' ? books[row.id].name : '' }}
+              </span>
             </foreach>
           </div>
         </foreach>
@@ -56,7 +57,7 @@ let vdom = new VirtualDOM({
       <div class="rows">
         <for start="1" end="5" current="i">
           <for start="1" end="5" current="n">
-            {{ i }} - {{ n }}
+            {{ i }} - {{ n }} || {{ transactext }}
           </for>
           <br />
         </for>
@@ -84,19 +85,21 @@ let vdom = new VirtualDOM({
       {
         name: 'Id',
         field: 'id',
+        width: 200,
       },
       {
         name: 'Name',
         field: 'name',
+        width: 300,
       },
     ],
     rows: [
       {
-        id: '1',
+        id: '0',
         name: 'lily',
       },
       {
-        id: '2',
+        id: '1',
         name: 'tom',
       },
     ],
@@ -105,6 +108,9 @@ let vdom = new VirtualDOM({
     fontColor: 'blue',
   },
   methods: {
+    format(value) {
+      return value.toString().toUpperCase()
+    },
     input(e) {
       e.target.value = 'xxx'
     },
@@ -138,7 +144,7 @@ let vdom = new VirtualDOM({
     'my-directive': function({ attrs, events, children }) {
       let myVDOM = createVirtualDOM({
         template: `
-          <div class="my-custom-directive" onclick={{:click}}></div>
+          <div class="my-custom-directive" onclick={{click}}></div>
         `,
         methods: {
           click(e) {

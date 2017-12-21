@@ -3,6 +3,7 @@ import foreach from './utils/foreach'
 import interpose from './utils/interpose'
 import recursive from './utils/recursive'
 import hashCode from './utils/hashCode'
+import merge from './utils/merge'
 
 export default function createVirtualDOM({ template, state = {}, methods = {}, directives = {} }) {
   // create an array to save parsed nodes
@@ -109,40 +110,36 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
   // even contains all directive children
   let tree = nodes.filter(node => !node.parent)
 
+  let scope = merge(state, methods)
   // replace interpolations which can use expression width state, i.e. {{ a + 1 }} or { b.name } or {{ a + b }}
-  let keys = []
-  let values = []
-  foreach(state, (key, value) => {
-    keys.push(key)
-    values.push(value)
-  })
-
-  // replace interpolations which can use expression width methods, i.e. {{:get}} or {{:call(name)}}
+  // replace interpolations which can use expression width methods
   // the expression result should be a function if you want to bind it to events
   // NOTICE: state property names and methods property names should be unique
-  let funcs = []
-  let callbacks = []
-  foreach(methods, (func, callback) => {
-    funcs.push(func)
-    callbacks.push(callback.bind(this))
+  let interposeKeys = []
+  let interposeValues = []
+  foreach(scope, (key, value) => {
+    interposeKeys.push(key)
+    interposeValues.push(value)
   })
+
 
   // recursive the tree to replace interpolations
   let vnodes = []
   recursive({ children: tree }, 'children', (child, parent) => {
     let { attrs, text, name } = child
 
+    // set scope, can be used in directive
+    child._scope = scope
+
     // interpose text
     if (text !== undefined) {
-      text = interpose(text, keys, values) // interpose width state
-      text = interpose(text, keys.concat(funcs), values.concat(callbacks), '{{:') // interpose width methods and state
+      text = interpose(text, interposeKeys, interposeValues) // interpose width state
       child.text = text
     }
     // interpose attrs
     else {
       foreach(attrs, (k, v) => {
-        v = interpose(v, keys.concat(funcs), values.concat(callbacks), '{{:')
-        v = interpose(v, keys, values)
+        v = interpose(v, interposeKeys, interposeValues)
         attrs[k] = v
 
         // bind events
@@ -174,21 +171,18 @@ export default function createVirtualDOM({ template, state = {}, methods = {}, d
   vnodes = vnodes.filter(item => !item._isDirective && !item._isDirectiveChildOf)
 
   function directiveProcessor({ vnode, definations, vnodes, vtree }) {
-    let { name, attrs, children, events, parent } = vnode
+    let { name, children, parent } = vnode
     let defination = definations[name]
   
-    // .parent prop should be delete before clone (if you want to clone), 
-    // or parent will be cloned, which may cause memory out
-    children.forEach(item => delete item.parent)
-  
-    let childNodes = defination({ attrs, children, events }, vnode) || children
-    childNodes.forEach(item => parent ? item.parent = parent : null)
+    let childNodes = defination(vnode) || children
 
     // use new nodes to replace current directive
     let borthers = parent ? parent.children : vtree
     let i = borthers.indexOf(vnode)
     borthers.splice(i, 1, ...childNodes)
-  
+    // after directive function action, the children's parents should be set to previous level
+    childNodes.forEach(item => parent ? item.parent = parent : null)
+    
     // deal with child directives
     // delete _isDirective and _isDirectiveChildOf
     childNodes.forEach(item => {
