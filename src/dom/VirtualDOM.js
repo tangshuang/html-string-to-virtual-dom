@@ -10,8 +10,6 @@ import foreach from './utils/foreach'
 import merge from './utils/merge'
 import { isNode, isElement } from './utils/isDOM'
 
-import cloneDeep from 'lodash/cloneDeep'
-
 export { createVirtualDOM, createDOM, diff, patch, cloneVNode, interposeVNode }
 export default class VirtualDOM {
   constructor({ template, state = {}, methods = {}, directives = {}, selector }) {
@@ -38,34 +36,34 @@ export default class VirtualDOM {
     let { vnodes, vtree } = this
     let elements = createDOM(vtree)
     let container = (isNode(selector) || isElement(selector)) ? selector : document.querySelector(selector)
-    
+
     elements.forEach(item => container.appendChild(item))
-    
+
     this.vnodes = vnodes.filter(vnode => vnode.$dom)
     this.container = container
   }
   update(state) {
     this.state = merge(this.state, state)
-    
+
     this.$$transactionPromises = this.$$transactionPromises || []
     this.$$transactionResolves = this.$$transactionResolves || []
 
     this.$$transactionPromises.push(new Promise(resolve => this.$$transactionResolves.push(resolve)))
-    
+
     if (this.$$transaction) {
       clearTimeout(this.$$transaction)
     }
-    
+
     this.$$transaction = setTimeout(() => {
       let lastVnodes = this.vnodes
       let lastVtree = this.vtree
-      
+
       this.create() // this.vnodes and this.vtree will be overrided
       let nextVtree = this.vtree
 
       let patches = diff(lastVtree, nextVtree, null)
-      
-      let { vnodes, vtree } = patch({ patches, vtree: lastVtree, vnodes: lastVnodes, container: this.container }) 
+
+      let { vnodes, vtree } = patch({ patches, vtree: lastVtree, vnodes: lastVnodes, container: this.container })
       // this.vtree and this.vnodes will be updated
 
       this.vnodes = vnodes
@@ -97,7 +95,7 @@ export default class VirtualDOM {
     rootElements.forEach(el => {
       // If DOM is created but not mounted to document (status = 1),
       // el.parentNode is null, then just set `rootElements = null` is ok.
-      // Notice: if some developers use .createDOM by himself (status = 1), 
+      // Notice: if some developers use .createDOM by himself (status = 1),
       // he should set the variable which saves the DOM elements to be
       // null manually, or the DOM elements will stay in memory.
       if (el.parentNode) {

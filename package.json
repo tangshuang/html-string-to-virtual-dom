@@ -1,5 +1,5 @@
 {
-  "name": "hst-virtual-dom",
+  "name": "html-string-to-virtual-dom",
   "version": "0.4.4",
   "description": "HTML string template based Virtual DOM library",
   "main": "dist/VirtualDOM.js",
@@ -10,8 +10,12 @@
     "Virtual DOM"
   ],
   "dependencies": {
-    "htmlparser2": "^3.9.2",
-    "lodash": "^4.17.4"
+    "deep-diff": "^1.0.2",
+    "htmlparser2": "^3.10.1",
+    "immer": "^7.0.0",
+    "lodash": "^4.17.15",
+    "scopex": "^1.1.1",
+    "ts-fns": "^6.4.5"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
@@ -22,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tangshuang/hst-virtual-dom.git"
+    "url": "git+https://github.com/tangshuang/html-string-to-virtual-dom.git"
   },
   "author": "tangshuang",
   "license": "MIT"
