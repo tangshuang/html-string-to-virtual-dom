@@ -1,4 +1,21 @@
-import { each } from 'ts-fns'
+import { each, inArray } from 'ts-fns'
+
+const selfClosingTags = [
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]
 
 export function rebuild(nodes) {
   const buildAttrs = (attrs) => {
@@ -16,6 +33,10 @@ export function rebuild(nodes) {
 
       if (selfclosing) {
         text += ' />'
+        return text
+      }
+      else if (inArray(type, selfClosingTags)) {
+        text += '>'
         return text
       }
 
