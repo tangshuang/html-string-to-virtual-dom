@@ -12,7 +12,7 @@ export function rebuild(nodes) {
     const { type, attrs, children, text, selfclosing } = node
 
     if (type) {
-      let text = `<${type} ${buildAttrs(attrs)}`
+      let text = `<${type}${buildAttrs(attrs)}`
 
       if (selfclosing) {
         text += ' />'

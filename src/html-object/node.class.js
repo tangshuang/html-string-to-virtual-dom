@@ -16,8 +16,45 @@ export class Node {
     this.parent = parent
   }
   appendChild(child) {
+    if (!(child instanceof Node)) {
+      child = new Node(child)
+    }
+    child.parent = this
     this.children.push(child)
   }
+  setAttribute(key, value) {
+    this.attrs = this.attrs || {}
+    this.attrs[key] = value
+  }
+  removeAttribute(key) {
+    this.attrs = this.attrs || {}
+    delete this.attrs[key]
+  }
+
+  /**
+   * 查询内部元素
+   * @param {*} selector
+   */
+  query(selector) {
+    if (!this.children) {
+      return []
+    }
+
+    const nodes = []
+    this.children.forEach((item) => {
+      if (item.type === selector) {
+        nodes.push(item)
+      }
+      // 如果子元素不是，那么要看子元素的子元素，一层一层找下去
+      else if (item.children) {
+        const subs = item.query(selector)
+        nodes.push(...subs)
+      }
+    })
+
+    return nodes
+  }
+
   toJSON() {
     const json = {}
     const keys = Object.keys(this)
